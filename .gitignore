@@ -10,7 +10,10 @@ elm.js
 main.js
 elmMain.js
 dist
+
+# experimental and not ready
 roc-example
+node-elm-to-roc
 
 # Editors
 .idea/
