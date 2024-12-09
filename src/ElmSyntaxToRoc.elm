@@ -1045,6 +1045,12 @@ referenceToRoc reference =
                 "slice" ->
                     Just { moduleOrigin = Nothing, name = "stringSlice" }
 
+                "toLower" ->
+                    Just { moduleOrigin = Nothing, name = "stringToLower" }
+
+                "toUpper" ->
+                    Just { moduleOrigin = Nothing, name = "stringToUpper" }
+
                 _ ->
                     Nothing
 
@@ -1736,7 +1742,19 @@ modules syntaxDeclarationsIncludingCore =
                                             )
                                         |> Just
 
-                                _ ->
+                                Elm.Syntax.Declaration.AliasDeclaration _ ->
+                                    Nothing
+
+                                Elm.Syntax.Declaration.CustomTypeDeclaration _ ->
+                                    Nothing
+
+                                Elm.Syntax.Declaration.PortDeclaration _ ->
+                                    Nothing
+
+                                Elm.Syntax.Declaration.InfixDeclaration _ ->
+                                    Nothing
+
+                                Elm.Syntax.Declaration.Destructuring _ _ ->
                                     Nothing
                         )
             )
@@ -1889,8 +1907,6 @@ expression moduleOriginLookup (Elm.Syntax.Node.Node _ syntaxExpression) =
                 "++" ->
                     Result.map2
                         (\left right ->
-                            -- TODO check right for literal string or Str.append call
-                            -- and use Str.append then
                             if
                                 (left |> rocExpressionIsDefinitelyOfTypeString)
                                     || (right |> rocExpressionIsDefinitelyOfTypeString)
@@ -2332,7 +2348,7 @@ qualifiedReferenceToRocName reference =
                 ++ reference.name
 
 
-{-| Print a [`RocExpression`](#Expression)
+{-| Print a [`RocExpression`](#RocExpression)
 -}
 printRocExpressionNotParenthesized : RocExpression -> Print
 printRocExpressionNotParenthesized rocExpression =
@@ -2746,10 +2762,10 @@ stringSlice =
             }
 
 stringToInt =
-    \\string -> resultToMaybe (Str.toI64 string)
+    \\string -> rocResultToMaybe (Str.toI64 string)
 
 stringToFloat =
-    \\string -> resultToMaybe (Str.toF64 string)
+    \\string -> rocResultToMaybe (Str.toF64 string)
 
 listCons =
     \\head, tail -> List.prepend tail head
@@ -2805,6 +2821,42 @@ listFoldr =
     \\reduce, initialFolded, list ->
         List.walkBackwards list initialFolded (\\soFar, element -> reduce element soFar)
 
+stringToLower =
+    \\string ->
+        when Str.fromUtf8 (List.map (Str.toUtf8 string) charToLower) is
+            Ok changed ->
+                changed
+            
+            Err _ ->
+                string
+
+stringToUpper =
+    \\string ->
+        when Str.fromUtf8 (List.map (Str.toUtf8 string) charToLower) is
+            Ok changed ->
+                changed
+            
+            Err _ ->
+                string
+
+charToLower =
+    \\char ->
+        -- only basic latin letters for now
+        if char >= 'A' && char <= 'Z' then
+            'a' + (char - 'A')
+        
+        else
+            char
+
+charToUpper =
+    \\char ->
+        -- only basic latin letters for now
+        if char >= 'a' && char <= 'z' then
+            'A' + (char - 'a')
+        
+        else
+            char
+
 dictMap =
     \\keyValueToNewValue, dict -> Dict.map dict keyValueToNewValue
 
@@ -2835,7 +2887,7 @@ dictFilter =
     \\isOkay, dict ->
         Dict.keepIf dict (\\( k, v ) -> isOkay k v)
 
-resultToMaybe =
+rocResultToMaybe =
     \\result ->
         when result is
             Err _ ->
@@ -2843,15 +2895,6 @@ resultToMaybe =
             
             Ok success ->
                 Maybe_Just success
-
-maybeToResult =
-    \\maybe ->
-        when maybe is
-            Maybe_Nothing ->
-                Err {}
-            
-            Maybe_Just content ->
-                Ok content
 
 """
         )
@@ -2865,25 +2908,6 @@ maybeToResult =
             )
         |> Print.FollowedBy Print.linebreak
         |> Print.toString
-
-
-listFoldlWhileOkFrom :
-    okFolded
-    -> (a -> okFolded -> Result err okFolded)
-    -> List a
-    -> Result err okFolded
-listFoldlWhileOkFrom initialOkFolded reduceOnOk list =
-    case list of
-        [] ->
-            Ok initialOkFolded
-
-        head :: tail ->
-            case initialOkFolded |> reduceOnOk head of
-                Err error ->
-                    Err error
-
-                Ok okFoldedWithHead ->
-                    listFoldlWhileOkFrom okFoldedWithHead reduceOnOk tail
 
 
 listMapAndCombineOk : (a -> Result err ok) -> List a -> Result err (List ok)
@@ -2906,25 +2930,6 @@ listMapAndCombineOkFrom soFar elementToResult list =
                     listMapAndCombineOkFrom (headOk :: soFar)
                         elementToResult
                         tail
-
-
-resultAndThen2 :
-    (a -> b -> Result error c)
-    -> Result error a
-    -> Result error b
-    -> Result error c
-resultAndThen2 abToResult aResult bResult =
-    case aResult of
-        Err error ->
-            Err error
-
-        Ok a ->
-            case bResult of
-                Err error ->
-                    Err error
-
-                Ok b ->
-                    abToResult a b
 
 
 resultAndThen3 :

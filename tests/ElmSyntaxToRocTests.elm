@@ -115,10 +115,10 @@ stringSlice =
             }
 
 stringToInt =
-    \\string -> resultToMaybe (Str.toI64 string)
+    \\string -> rocResultToMaybe (Str.toI64 string)
 
 stringToFloat =
-    \\string -> resultToMaybe (Str.toF64 string)
+    \\string -> rocResultToMaybe (Str.toF64 string)
 
 listCons =
     \\head, tail -> List.prepend tail head
@@ -174,6 +174,42 @@ listFoldr =
     \\reduce, initialFolded, list ->
         List.walkBackwards list initialFolded (\\soFar, element -> reduce element soFar)
 
+stringToLower =
+    \\string ->
+        when Str.fromUtf8 (List.map (Str.toUtf8 string) charToLower) is
+            Ok changed ->
+                changed
+            
+            Err _ ->
+                string
+
+stringToUpper =
+    \\string ->
+        when Str.fromUtf8 (List.map (Str.toUtf8 string) charToLower) is
+            Ok changed ->
+                changed
+            
+            Err _ ->
+                string
+
+charToLower =
+    \\char ->
+        -- only basic latin letters for now
+        if char >= 'A' && char <= 'Z' then
+            'a' + (char - 'A')
+        
+        else
+            char
+
+charToUpper =
+    \\char ->
+        -- only basic latin letters for now
+        if char >= 'a' && char <= 'z' then
+            'A' + (char - 'a')
+        
+        else
+            char
+
 dictMap =
     \\keyValueToNewValue, dict -> Dict.map dict keyValueToNewValue
 
@@ -204,7 +240,7 @@ dictFilter =
     \\isOkay, dict ->
         Dict.keepIf dict (\\( k, v ) -> isOkay k v)
 
-resultToMaybe =
+rocResultToMaybe =
     \\result ->
         when result is
             Err _ ->
@@ -212,15 +248,6 @@ resultToMaybe =
             
             Ok success ->
                 Maybe_Just success
-
-maybeToResult =
-    \\maybe ->
-        when maybe is
-            Maybe_Nothing ->
-                Err {}
-            
-            Maybe_Just content ->
-                Ok content
 
 aA0 =
     when
