@@ -1036,10 +1036,10 @@ referenceToRoc reference =
         [ "Char" ] ->
             case reference.name of
                 "toCode" ->
-                    Just { moduleOrigin = Nothing, name = "basicsIdentity" }
+                    Just { moduleOrigin = Just "Num", name = "intCast" }
 
                 "fromCode" ->
-                    Just { moduleOrigin = Nothing, name = "basicsIdentity" }
+                    Just { moduleOrigin = Just "Num", name = "intCast" }
 
                 _ ->
                     Nothing
