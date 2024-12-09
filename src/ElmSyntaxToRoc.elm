@@ -1,13 +1,13 @@
 module ElmSyntaxToRoc exposing
     ( modules, rocDeclarationsToModuleString
-    , RocDeclarationValueOrFunction, RocLocalDeclaration(..), RocExpression(..), RocPattern(..)
+    , RocLocalDeclaration(..), RocExpression(..), RocPattern(..)
     )
 
 {-| Transpiling [`elm-syntax`](https://dark.elm.dmy.fr/packages/stil4m/elm-syntax/latest/)
 declarations to roc.
 
 @docs modules, rocDeclarationsToModuleString
-@docs RocDeclarationValueOrFunction, RocLocalDeclaration, RocExpression, RocPattern
+@docs RocLocalDeclaration, RocExpression, RocPattern
 
 If you need more fine-grained helpers,
 [open an issue](https://github.com/lue-bird/elm-syntax-format/issues/new)
@@ -20,7 +20,6 @@ import Elm.Syntax.Exposing
 import Elm.Syntax.Expression
 import Elm.Syntax.File
 import Elm.Syntax.Import
-import Elm.Syntax.Infix
 import Elm.Syntax.Module
 import Elm.Syntax.ModuleName
 import Elm.Syntax.Node
@@ -31,12 +30,8 @@ import Print exposing (Print)
 import Unicode
 
 
-type alias RocDeclarationValueOrFunction =
-    { name : String
-    , result : RocExpression
-    }
-
-
+{-| The sub-set of roc pattern syntax used in generated roc code
+-}
 type RocPattern
     = RocPatternIgnore
     | RocPatternInteger Int
@@ -68,6 +63,8 @@ type RocPattern
         }
 
 
+{-| The sub-set of roc expression syntax used in generated roc code
+-}
 type RocExpression
     = RocExpressionUnit
     | RocExpressionInteger Int
@@ -131,12 +128,17 @@ type RocExpression
         }
 
 
+{-| The sub-set of roc local declaration syntax used in generated roc code
+-}
 type RocLocalDeclaration
     = RocLocalDestructuring
         { pattern : RocPattern
         , expression : RocExpression
         }
-    | RocLocalDeclarationValueOrFunction RocDeclarationValueOrFunction
+    | RocLocalDeclarationValueOrFunction
+        { name : String
+        , result : RocExpression
+        }
 
 
 {-| How do references used in a module map to their origin module?
@@ -362,24 +364,6 @@ implicitImports =
     ]
 
 
-listMapToFastDict :
-    (a -> { key : comparableKey, value : value })
-    -> List a
-    -> FastDict.Dict comparableKey value
-listMapToFastDict elementToKeyValue list =
-    list
-        |> List.foldl
-            (\element soFar ->
-                let
-                    keyValue : { key : comparableKey, value : value }
-                    keyValue =
-                        element |> elementToKeyValue
-                in
-                soFar |> FastDict.insert keyValue.key keyValue.value
-            )
-            FastDict.empty
-
-
 importsCombine :
     List
         { moduleName : Elm.Syntax.ModuleName.ModuleName
@@ -474,6 +458,16 @@ stringFirstCharToLower string =
             String.cons (Char.toLower headChar) tailString
 
 
+stringFirstCharToUpper : String -> String
+stringFirstCharToUpper string =
+    case string |> String.uncons of
+        Nothing ->
+            ""
+
+        Just ( headChar, tailString ) ->
+            String.cons (Char.toUpper headChar) tailString
+
+
 stringFirstCharIsUpper : String -> Bool
 stringFirstCharIsUpper string =
     case string |> String.uncons of
@@ -530,6 +524,7 @@ singleDoubleQuotedStringCharToEscaped character =
 
 intToHexString : Int -> String
 intToHexString int =
+    -- IGNORE TCO
     if int < 16 then
         unsafeHexDigitIntToString int
 
@@ -801,7 +796,28 @@ pattern moduleOriginLookup (Elm.Syntax.Node.Node _ syntaxPattern) =
                                     )
                                 )
 
-                        _ ->
+                        RocPatternInteger _ ->
+                            Err "list tail pattern can only be ignored or a variable"
+
+                        RocPatternString _ ->
+                            Err "list tail pattern can only be ignored or a variable"
+
+                        RocPatternRecord _ ->
+                            Err "list tail pattern can only be ignored or a variable"
+
+                        RocPatternAs _ ->
+                            Err "list tail pattern can only be ignored or a variable"
+
+                        RocPatternListCons _ ->
+                            Err "list tail pattern can only be ignored or a variable"
+
+                        RocPatternTagged _ ->
+                            Err "list tail pattern can only be ignored or a variable"
+
+                        RocPatternTuple _ ->
+                            Err "list tail pattern can only be ignored or a variable"
+
+                        RocPatternTriple _ ->
                             Err "list tail pattern can only be ignored or a variable"
                 )
                 (headPattern |> pattern moduleOriginLookup)
@@ -871,7 +887,6 @@ referenceToRoc :
             , name : String
             }
 referenceToRoc reference =
-    -- TODO switch out for custom declarations that have correct argument order
     case reference.moduleOrigin of
         [ "Basics" ] ->
             case reference.name of
@@ -927,7 +942,7 @@ referenceToRoc reference =
                     Just { moduleOrigin = Just "Num", name = "isInfinite" }
 
                 "remainderBy" ->
-                    Just { moduleOrigin = Nothing, name = "basics_remainderBy" }
+                    Just { moduleOrigin = Nothing, name = "basicsRemainderBy" }
 
                 "sin" ->
                     Just { moduleOrigin = Just "Num", name = "sin" }
@@ -960,16 +975,15 @@ referenceToRoc reference =
                     Just { moduleOrigin = Just "Num", name = "min" }
 
                 "identity" ->
-                    Just { moduleOrigin = Nothing, name = "basics_identity" }
+                    Just { moduleOrigin = Nothing, name = "basicsIdentity" }
 
                 "always" ->
-                    Just { moduleOrigin = Nothing, name = "basics_always" }
+                    Just { moduleOrigin = Nothing, name = "basicsAlways" }
 
                 _ ->
                     Nothing
 
         [ "String" ] ->
-            -- TODO
             case reference.name of
                 "isEmpty" ->
                     Just { moduleOrigin = Just "Str", name = "isEmpty" }
@@ -990,31 +1004,124 @@ referenceToRoc reference =
                     Just { moduleOrigin = Just "Str", name = "trimEnd" }
 
                 "join" ->
-                    Just { moduleOrigin = Nothing, name = "string_join" }
+                    Just { moduleOrigin = Nothing, name = "stringJoin" }
 
                 "split" ->
-                    Just { moduleOrigin = Nothing, name = "string_split" }
+                    Just { moduleOrigin = Nothing, name = "stringSplit" }
 
                 "repeat" ->
-                    Just { moduleOrigin = Nothing, name = "string_repeat" }
+                    Just { moduleOrigin = Nothing, name = "stringRepeat" }
 
                 "startsWith" ->
-                    Just { moduleOrigin = Nothing, name = "string_startsWith" }
+                    Just { moduleOrigin = Nothing, name = "stringStartsWith" }
 
                 "endsWith" ->
-                    Just { moduleOrigin = Nothing, name = "string_endsWith" }
+                    Just { moduleOrigin = Nothing, name = "stringEndsWith" }
 
                 "toInt" ->
-                    Just { moduleOrigin = Nothing, name = "string_toInt" }
+                    Just { moduleOrigin = Nothing, name = "stringToInt" }
 
                 "toFloat" ->
-                    Just { moduleOrigin = Nothing, name = "string_toFloat" }
+                    Just { moduleOrigin = Nothing, name = "stringToFloat" }
+
+                "contains" ->
+                    Just { moduleOrigin = Nothing, name = "stringContains" }
+
+                "slice" ->
+                    Just { moduleOrigin = Nothing, name = "stringSlice" }
+
+                _ ->
+                    Nothing
+
+        [ "Char" ] ->
+            case reference.name of
+                "toCode" ->
+                    Just { moduleOrigin = Nothing, name = "basicsIdentity" }
+
+                "fromCode" ->
+                    Just { moduleOrigin = Nothing, name = "basicsIdentity" }
+
+                _ ->
+                    Nothing
+
+        [ "List" ] ->
+            case reference.name of
+                "singleton" ->
+                    Just { moduleOrigin = Just "List", name = "single" }
+
+                "isEmpty" ->
+                    Just { moduleOrigin = Just "List", name = "isEmpty" }
+
+                "length" ->
+                    Just { moduleOrigin = Just "List", name = "len" }
+
+                "sum" ->
+                    Just { moduleOrigin = Just "List", name = "sum" }
+
+                "product" ->
+                    Just { moduleOrigin = Just "List", name = "product" }
+
+                "append" ->
+                    Just { moduleOrigin = Just "List", name = "concat" }
+
+                "concat" ->
+                    Just { moduleOrigin = Just "List", name = "join" }
+
+                "sort" ->
+                    Just { moduleOrigin = Just "List", name = "sortAsc" }
+
+                "repeat" ->
+                    Just { moduleOrigin = Nothing, name = "listRepeat" }
+
+                "all" ->
+                    Just { moduleOrigin = Nothing, name = "listAll" }
+
+                "any" ->
+                    Just { moduleOrigin = Nothing, name = "listAny" }
+
+                "filter" ->
+                    Just { moduleOrigin = Nothing, name = "listFilter" }
+
+                "map" ->
+                    Just { moduleOrigin = Nothing, name = "listMap" }
+
+                "map2" ->
+                    Just { moduleOrigin = Nothing, name = "listMap2" }
+
+                "map3" ->
+                    Just { moduleOrigin = Nothing, name = "listMap3" }
+
+                "map4" ->
+                    Just { moduleOrigin = Nothing, name = "listMap4" }
+
+                "concatMap" ->
+                    Just { moduleOrigin = Nothing, name = "listConcatMap" }
+
+                "sortWith" ->
+                    Just { moduleOrigin = Nothing, name = "listSortWith" }
+
+                "range" ->
+                    Just { moduleOrigin = Nothing, name = "listRange" }
+
+                "take" ->
+                    Just { moduleOrigin = Nothing, name = "listTake" }
+
+                "drop" ->
+                    Just { moduleOrigin = Nothing, name = "listDrop" }
+
+                "intersperse" ->
+                    Just { moduleOrigin = Nothing, name = "listIntersperse" }
+
+                "foldl" ->
+                    Just { moduleOrigin = Nothing, name = "listFoldl" }
+
+                "foldr" ->
+                    Just { moduleOrigin = Nothing, name = "listFoldr" }
 
                 _ ->
                     Nothing
 
         [ "Dict" ] ->
-            -- TODO
             case reference.name of
                 "empty" ->
                     Just { moduleOrigin = Just "Dict", name = "empty" }
@@ -1040,20 +1147,35 @@ referenceToRoc reference =
                 "isEmpty" ->
                     Just { moduleOrigin = Just "Dict", name = "isEmpty" }
 
+                "diff" ->
+                    Just { moduleOrigin = Just "Dict", name = "removeAll" }
+
                 "map" ->
-                    Just { moduleOrigin = Just "Dict", name = "map" }
+                    Just { moduleOrigin = Nothing, name = "dictMap" }
 
                 "foldl" ->
-                    Just { moduleOrigin = Just "Dict", name = "walk" }
+                    Just { moduleOrigin = Nothing, name = "dictFoldl" }
+
+                "foldr" ->
+                    Just { moduleOrigin = Nothing, name = "dictFoldr" }
+
+                "get" ->
+                    Just { moduleOrigin = Nothing, name = "dictGet" }
 
                 "member" ->
-                    Just { moduleOrigin = Just "Dict", name = "contains" }
+                    Just { moduleOrigin = Nothing, name = "dictMember" }
 
                 "insert" ->
-                    Just { moduleOrigin = Just "Dict", name = "insert" }
+                    Just { moduleOrigin = Nothing, name = "dictInsert" }
 
                 "remove" ->
-                    Just { moduleOrigin = Just "Dict", name = "remove" }
+                    Just { moduleOrigin = Nothing, name = "dictRemove" }
+
+                "union" ->
+                    Just { moduleOrigin = Nothing, name = "dictUnion" }
+
+                "filter" ->
+                    Just { moduleOrigin = Nothing, name = "dictFilter" }
 
                 _ ->
                     Nothing
@@ -1074,8 +1196,7 @@ referenceToRocName reference =
      else
         reference.moduleOrigin |> String.concat |> stringFirstCharToLower
     )
-        ++ "_"
-        ++ reference.name
+        ++ (reference.name |> stringFirstCharToUpper)
 
 
 printRocPatternNotParenthesized : RocPattern -> Print
@@ -1405,7 +1526,14 @@ except `elm/core`.
 -}
 modules :
     List Elm.Syntax.File.File
-    -> Result String (List RocDeclarationValueOrFunction)
+    ->
+        Result
+            String
+            (List
+                { name : String
+                , result : RocExpression
+                }
+            )
 modules syntaxDeclarations =
     let
         moduleMembers :
@@ -1560,7 +1688,12 @@ moduleHeaderName moduleHeader =
 valueOrFunctionDeclaration :
     ModuleOriginLookup
     -> Elm.Syntax.Expression.FunctionImplementation
-    -> Result String RocDeclarationValueOrFunction
+    ->
+        Result
+            String
+            { name : String
+            , result : RocExpression
+            }
 valueOrFunctionDeclaration moduleOriginLookup syntaxDeclarationValueOrFunction =
     Result.map2
         (\parameters result ->
@@ -2014,13 +2147,20 @@ expressionOperatorToRocFunctionReference operatorSmbol =
         ">=" ->
             Ok { moduleOrigin = Just "Num", name = "isGte" }
 
+        "::" ->
+            Ok { moduleOrigin = Nothing, name = "listCons" }
+
         unknownOrUnsupportedOperator ->
             Err ("unknown/unsupported operator " ++ unknownOrUnsupportedOperator)
 
 
-{-| Print a [`RocDeclarationValueOrFunction`](#RocDeclarationValueOrFunction)
+{-| Print a roc value/function declaration
 -}
-printRocDeclarationValueOrFunction : RocDeclarationValueOrFunction -> Print
+printRocDeclarationValueOrFunction :
+    { name : String
+    , result : RocExpression
+    }
+    -> Print
 printRocDeclarationValueOrFunction implementation =
     Print.exactly (implementation.name ++ " =")
         |> Print.followedBy
@@ -2369,7 +2509,15 @@ printRocExpressionWhenIsCase branch =
             )
 
 
-rocDeclarationsToModuleString : List RocDeclarationValueOrFunction -> String
+{-| Print value/function declarations into a roc module that exposes all members.
+Will also add some internal wrapper declarations.
+-}
+rocDeclarationsToModuleString :
+    List
+        { name : String
+        , result : RocExpression
+        }
+    -> String
 rocDeclarationsToModuleString declarations =
     Print.exactly
         ("""module [
@@ -2382,37 +2530,149 @@ rocDeclarationsToModuleString declarations =
 ]
 
 
-basics_identity =
+basicsIdentity =
     \\a -> a
 
-basics_always =
+basicsAlways =
     \\a, _ -> a
 
-basics_remainderBy =
+basicsRemainderBy =
     \\divisor, toDivide -> Num.rem toDivide divisor
 
-string_join =
-    \\seperator, strings -> Str.joinWith strings seperator
+stringJoin =
+    \\separator, strings -> Str.joinWith strings separator
 
-string_split =
-    \\seperator, string -> Str.splitOn string seperator
+stringSplit =
+    \\separator, string -> Str.splitOn string separator
 
-string_repeat =
+stringRepeat =
     \\toRepeat, howOften -> Str.repeat toRepeat howOften
 
-string_startsWith =
+stringStartsWith =
     \\string, startToTestFor -> Str.startsWith string startToTestFor
 
-string_endsWith =
+stringEndsWith =
     \\string, startToTestFor -> Str.endsWith string startToTestFor
 
-string_toInt =
-    \\string -> result_toMaybe (Str.toI64 string)
+stringReplace =
+    \\string, toReplace, replacement -> Str.replaceEach string toReplace replacement
 
-string_toFloat =
-    \\string -> result_toMaybe (Str.toF64 string)
+stringContains =
+    \\substring, string -> Str.contains string substring
 
-result_toMaybe =
+stringSlice =
+    \\startIndex, endIndexExclusive, string ->
+        realStartIndex =
+            if Num.isNegative startIndex then
+                Str.countUtf8Bytes string + startIndex
+            
+            else
+                startIndex
+        
+        realEndIndexExclusive =
+            if Num.isNegative endIndexExclusive then
+                Str.countUtf8Bytes string + endIndexExclusive
+            
+            else
+                endIndexExclusive
+        
+        List.sublist
+            (Str.toUtf8 string)
+            { start: startIndex,
+              len: realEndIndexExclusive - 1 - startIndex
+            }
+
+stringToInt =
+    \\string -> resultToMaybe (Str.toI64 string)
+
+stringToFloat =
+    \\string -> resultToMaybe (Str.toF64 string)
+
+listCons =
+    \\head, tail -> List.prepend tail head
+
+listRepeat =
+    \\howOften, element -> List.repeat element howOften
+
+listAny =
+    \\isNeedle, list -> List.any list isNeedle
+
+listAll =
+    \\isRegular, list -> List.all list isRegular
+
+listFilter =
+    \\isOkay, list -> List.keepIf list isOkay
+
+listMap =
+    \\elementChange, list -> List.map list elementChange
+
+listMap2 =
+    \\abCombine, aList, bList -> List.map2 aList bList abCombine
+
+listMap3 =
+    \\abcCombine, aList, bList, cList -> List.map3 aList bList cList abcCombine
+
+listMap4 =
+    \\abcdCombine, aList, bList, cList, dList -> List.map4 aList bList cList dList abcdCombine
+
+listSortWith =
+    \\elementCompare, list -> List.sortWith list elementCompare
+
+listRange =
+    \\startInclusive, endInclusive ->
+        List.range { start: At startInclusive, end: At endInclusive }
+
+listTake =
+    \\howMany, list -> List.takeFirst list howMany
+
+listDrop =
+    \\howMany, list -> List.dropFirst list howMany
+
+listConcatMap =
+    \\elementToList, list -> List.joinMap list elementToList
+
+listIntersperse =
+    \\inBetweenElement, list -> List.intersperse list inBetweenElement
+
+listFoldl =
+    \\reduce, initialFolded, list ->
+        List.walk list initialFolded (\\soFar, element -> reduce element soFar)
+
+listFoldr =
+    \\reduce, initialFolded, list ->
+        List.walkBackwards list initialFolded (\\soFar, element -> reduce element soFar)
+
+dictMap =
+    \\keyValueToNewValue, dict -> Dict.map dict keyValueToNewValue
+
+dictFoldl =
+    \\reduce, initialFolded, dict ->
+        Dict.walk dict initialFolded (\\soFar, k, v -> reduce k v soFar)
+
+dictFoldr =
+    \\reduce, initialFolded, dict ->
+        Dict.walkBackwards dict initialFolded (\\soFar, k, v -> reduce k v soFar)
+
+dictGet =
+    \\key, dict -> Dict.map dict key
+
+dictMember =
+    \\key, dict -> Dict.contains dict key
+
+dictInsert =
+    \\key, value, dict -> Dict.remove dict key value
+
+dictRemove =
+    \\key, dict -> Dict.remove dict key
+
+dictUnion =
+    \\newDict, baseDict -> Dict.insertAll baseDict newDict
+
+dictFilter =
+    \\isOkay, dict ->
+        Dict.keepIf dict (\\( k, v ) -> isOkay k v)
+
+resultToMaybe =
     \\result ->
         when result is
             Err _ ->
@@ -2421,6 +2681,14 @@ result_toMaybe =
             Ok success ->
                 Maybe_Just success
 
+maybeToResult =
+    \\maybe ->
+        when maybe is
+            Maybe_Nothing ->
+                Err {}
+            
+            Maybe_Just content ->
+                Ok content
 
 """
         )

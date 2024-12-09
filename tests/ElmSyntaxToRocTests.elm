@@ -37,43 +37,155 @@ a2 x =
 """
                     |> expectTranspiledToRocStringAs
                         """module [
-    a_a0,
-    a_a1,
-    a_a2
+    aA0,
+    aA1,
+    aA2
 ]
 
 
-basics_identity =
+basicsIdentity =
     \\a -> a
 
-basics_always =
+basicsAlways =
     \\a, _ -> a
 
-basics_remainderBy =
+basicsRemainderBy =
     \\divisor, toDivide -> Num.rem toDivide divisor
 
-string_join =
-    \\seperator, strings -> Str.joinWith strings seperator
+stringJoin =
+    \\separator, strings -> Str.joinWith strings separator
 
-string_split =
-    \\seperator, string -> Str.splitOn string seperator
+stringSplit =
+    \\separator, string -> Str.splitOn string separator
 
-string_repeat =
+stringRepeat =
     \\toRepeat, howOften -> Str.repeat toRepeat howOften
 
-string_startsWith =
+stringStartsWith =
     \\string, startToTestFor -> Str.startsWith string startToTestFor
 
-string_endsWith =
+stringEndsWith =
     \\string, startToTestFor -> Str.endsWith string startToTestFor
 
-string_toInt =
-    \\string -> result_toMaybe (Str.toI64 string)
+stringReplace =
+    \\string, toReplace, replacement -> Str.replaceEach string toReplace replacement
 
-string_toFloat =
-    \\string -> result_toMaybe (Str.toF64 string)
+stringContains =
+    \\substring, string -> Str.contains string substring
 
-result_toMaybe =
+stringSlice =
+    \\startIndex, endIndexExclusive, string ->
+        realStartIndex =
+            if Num.isNegative startIndex then
+                Str.countUtf8Bytes string + startIndex
+            
+            else
+                startIndex
+        
+        realEndIndexExclusive =
+            if Num.isNegative endIndexExclusive then
+                Str.countUtf8Bytes string + endIndexExclusive
+            
+            else
+                endIndexExclusive
+        
+        List.sublist
+            (Str.toUtf8 string)
+            { start: startIndex,
+              len: realEndIndexExclusive - 1 - startIndex
+            }
+
+stringToInt =
+    \\string -> resultToMaybe (Str.toI64 string)
+
+stringToFloat =
+    \\string -> resultToMaybe (Str.toF64 string)
+
+listCons =
+    \\head, tail -> List.prepend tail head
+
+listRepeat =
+    \\howOften, element -> List.repeat element howOften
+
+listAny =
+    \\isNeedle, list -> List.any list isNeedle
+
+listAll =
+    \\isRegular, list -> List.all list isRegular
+
+listFilter =
+    \\isOkay, list -> List.keepIf list isOkay
+
+listMap =
+    \\elementChange, list -> List.map list elementChange
+
+listMap2 =
+    \\abCombine, aList, bList -> List.map2 aList bList abCombine
+
+listMap3 =
+    \\abcCombine, aList, bList, cList -> List.map3 aList bList cList abcCombine
+
+listMap4 =
+    \\abcdCombine, aList, bList, cList, dList -> List.map4 aList bList cList dList abcdCombine
+
+listSortWith =
+    \\elementCompare, list -> List.sortWith list elementCompare
+
+listRange =
+    \\startInclusive, endInclusive ->
+        List.range { start: At startInclusive, end: At endInclusive }
+
+listTake =
+    \\howMany, list -> List.takeFirst list howMany
+
+listDrop =
+    \\howMany, list -> List.dropFirst list howMany
+
+listConcatMap =
+    \\elementToList, list -> List.joinMap list elementToList
+
+listIntersperse =
+    \\inBetweenElement, list -> List.intersperse list inBetweenElement
+
+listFoldl =
+    \\reduce, initialFolded, list ->
+        List.walk list initialFolded (\\soFar, element -> reduce element soFar)
+
+listFoldr =
+    \\reduce, initialFolded, list ->
+        List.walkBackwards list initialFolded (\\soFar, element -> reduce element soFar)
+
+dictMap =
+    \\keyValueToNewValue, dict -> Dict.map dict keyValueToNewValue
+
+dictFoldl =
+    \\reduce, initialFolded, dict ->
+        Dict.walk dict initialFolded (\\soFar, k, v -> reduce k v soFar)
+
+dictFoldr =
+    \\reduce, initialFolded, dict ->
+        Dict.walkBackwards dict initialFolded (\\soFar, k, v -> reduce k v soFar)
+
+dictGet =
+    \\key, dict -> Dict.map dict key
+
+dictMember =
+    \\key, dict -> Dict.contains dict key
+
+dictInsert =
+    \\key, value, dict -> Dict.remove dict key value
+
+dictRemove =
+    \\key, dict -> Dict.remove dict key
+
+dictUnion =
+    \\newDict, baseDict -> Dict.insertAll baseDict newDict
+
+dictFilter =
+    \\isOkay, dict ->
+        Dict.keepIf dict (\\( k, v ) -> isOkay k v)
+
+resultToMaybe =
     \\result ->
         when result is
             Err _ ->
@@ -82,33 +194,41 @@ result_toMaybe =
             Ok success ->
                 Maybe_Just success
 
+maybeToResult =
+    \\maybe ->
+        when maybe is
+            Maybe_Nothing ->
+                Err {}
+            
+            Maybe_Just content ->
+                Ok content
 
-a_a0 =
+aA0 =
     when
         []
     is
-        [ b, Maybe_Just c, .. as d ] ->
+        [ b, MaybeJust c, .. as d ] ->
             b
 
         _ ->
             0
 
-a_a1 =
+aA1 =
     when
         []
     is
-        [ b, Maybe_Just c, .. ] ->
+        [ b, MaybeJust c, .. ] ->
             b
 
         _ ->
             0
 
-a_a2 =
+aA2 =
     \\x ->
         when
             x
         is
-            ( [ { y, z }, .. as tail ], (Maybe_Nothing) as nothing, ( Maybe_Just [ "" ], 0 ) ) ->
+            ( [ { y, z }, .. as tail ], (MaybeNothing) as nothing, ( MaybeJust [ "" ], 0 ) ) ->
                 0
 
             _ ->
