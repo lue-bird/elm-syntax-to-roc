@@ -221,11 +221,11 @@ importsToModuleOriginLookup moduleExposes imports =
                                                                             Elm.Syntax.Exposing.InfixExpose _ ->
                                                                                 soFar
 
-                                                                            Elm.Syntax.Exposing.FunctionExpose name ->
-                                                                                soFar |> FastSet.insert name
-
                                                                             Elm.Syntax.Exposing.TypeOrAliasExpose _ ->
                                                                                 soFar
+
+                                                                            Elm.Syntax.Exposing.FunctionExpose name ->
+                                                                                soFar |> FastSet.insert name
 
                                                                             Elm.Syntax.Exposing.TypeExpose choiceTypeExpose ->
                                                                                 case choiceTypeExpose.open of
@@ -1807,8 +1807,12 @@ expression moduleOriginLookup (Elm.Syntax.Node.Node _ syntaxExpression) =
             -- invalid syntax
             Err "operator is invalid syntax"
 
-        Elm.Syntax.Expression.PrefixOperator _ ->
-            Err "prefix operator function is not supported"
+        Elm.Syntax.Expression.PrefixOperator operatorSymbol ->
+            Result.map
+                (\operationFunctionReference ->
+                    RocExpressionReference operationFunctionReference
+                )
+                (expressionOperatorToRocFunctionReference operatorSymbol)
 
         Elm.Syntax.Expression.GLSLExpression _ ->
             Err "glsl not supported"
@@ -1869,15 +1873,30 @@ expression moduleOriginLookup (Elm.Syntax.Node.Node _ syntaxExpression) =
                         (\left right ->
                             -- TODO check right for literal string or Str.append call
                             -- and use Str.append then
-                            RocExpressionCall
-                                { called =
-                                    RocExpressionReference
-                                        { moduleOrigin = Just "List"
-                                        , name = "append"
-                                        }
-                                , argument0 = left
-                                , argument1Up = [ right ]
-                                }
+                            if
+                                (left |> rocExpressionIsDefinitelyOfTypeString)
+                                    || (right |> rocExpressionIsDefinitelyOfTypeString)
+                            then
+                                RocExpressionCall
+                                    { called =
+                                        RocExpressionReference
+                                            { moduleOrigin = Just "Str"
+                                            , name = "append"
+                                            }
+                                    , argument0 = left
+                                    , argument1Up = [ right ]
+                                    }
+
+                            else
+                                RocExpressionCall
+                                    { called =
+                                        RocExpressionReference
+                                            { moduleOrigin = Just "List"
+                                            , name = "append"
+                                            }
+                                    , argument0 = left
+                                    , argument1Up = [ right ]
+                                    }
                         )
                         (leftNode |> expression moduleOriginLookup)
                         (rightNode |> expression moduleOriginLookup)
@@ -1887,10 +1906,7 @@ expression moduleOriginLookup (Elm.Syntax.Node.Node _ syntaxExpression) =
                         (\operationFunctionReference left right ->
                             RocExpressionCall
                                 { called =
-                                    RocExpressionReference
-                                        { moduleOrigin = operationFunctionReference.moduleOrigin
-                                        , name = operationFunctionReference.name
-                                        }
+                                    RocExpressionReference operationFunctionReference
                                 , argument0 = left
                                 , argument1Up = [ right ]
                                 }
@@ -2110,6 +2126,63 @@ expression moduleOriginLookup (Elm.Syntax.Node.Node _ syntaxExpression) =
                                 )
                         )
                         (letIn.expression |> expression moduleOriginLookup)
+
+
+rocExpressionIsDefinitelyOfTypeString : RocExpression -> Bool
+rocExpressionIsDefinitelyOfTypeString rocExpression =
+    case rocExpression of
+        RocExpressionString _ ->
+            True
+
+        RocExpressionCall call ->
+            call.called
+                == RocExpressionReference { moduleOrigin = Just "Str", name = "append" }
+                && ((call.argument1Up |> List.length) == 1)
+
+        RocExpressionUnit ->
+            False
+
+        RocExpressionInteger _ ->
+            False
+
+        RocExpressionF64 _ ->
+            False
+
+        RocExpressionReference _ ->
+            False
+
+        RocExpressionRecordAccessFunction _ ->
+            False
+
+        RocExpressionRecordAccess _ ->
+            False
+
+        RocExpressionTuple _ ->
+            False
+
+        RocExpressionTriple _ ->
+            False
+
+        RocExpressionIfThenElse _ ->
+            False
+
+        RocExpressionList _ ->
+            False
+
+        RocExpressionRecord _ ->
+            False
+
+        RocExpressionRecordUpdate _ ->
+            False
+
+        RocExpressionLambda _ ->
+            False
+
+        RocExpressionWhenIs _ ->
+            False
+
+        RocExpressionWithLocalDeclarations _ ->
+            False
 
 
 case_ :
