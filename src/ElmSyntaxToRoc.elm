@@ -1522,7 +1522,7 @@ printParenthesized notParenthesizedPrint =
 across multiple modules to [`RocDeclaration`]s.
 
 The given list of files must also include files from used dependencies
-except `elm/core`.
+including `elm/core`.
 -}
 modules :
     List Elm.Syntax.File.File
@@ -1534,8 +1534,61 @@ modules :
                 , result : RocExpression
                 }
             )
-modules syntaxDeclarations =
+modules syntaxDeclarationsIncludingCore =
     let
+        syntaxDeclarations : List Elm.Syntax.File.File
+        syntaxDeclarations =
+            syntaxDeclarationsIncludingCore
+                |> List.filter
+                    (\syntaxModule ->
+                        case
+                            syntaxModule.moduleDefinition
+                                |> Elm.Syntax.Node.value
+                                |> moduleHeaderName
+                        of
+                            [ "Basics" ] ->
+                                False
+
+                            [ "Array" ] ->
+                                False
+
+                            [ "Bitwise" ] ->
+                                False
+
+                            [ "Debug" ] ->
+                                False
+
+                            [ "Char" ] ->
+                                False
+
+                            [ "List" ] ->
+                                False
+
+                            [ "Dict" ] ->
+                                False
+
+                            [ "Set" ] ->
+                                False
+
+                            [ "Platform" ] ->
+                                False
+
+                            [ "Platform", "Cmd" ] ->
+                                False
+
+                            [ "Platform", "Sub" ] ->
+                                False
+
+                            [ "Process" ] ->
+                                False
+
+                            [ "Task" ] ->
+                                False
+
+                            _ ->
+                                True
+                    )
+
         moduleMembers :
             FastDict.Dict
                 Elm.Syntax.ModuleName.ModuleName
