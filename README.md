@@ -20,11 +20,14 @@ plus2 n =
         )
 -->
 Ok """module [
-    plus2
+    sample_plus2
 ]
 
-plus2 (n) =
-    n + (List.sum ([ 2 ]))
+sample_plus2 =
+    \n ->
+        Num.add (n) (List.sum ([ 2 ]))
+
+..and some default declarations..
 """
 ```
 
@@ -56,4 +59,4 @@ Please [report any issues](https://github.com/lue-bird/elm-syntax-format/issues/
 ### why roc?
 
 -   it runs decently fast and can target Wasm
--   it's pretty much a superset of elm and doesn't require any types which makes transpiling trivial
+-   it's pretty much a superset of elm and doesn't require any types which makes transpiling trivial (for the record I failed at transpiling to rust because I was not skilled enough to generate types for types like curried rc'd closures)
