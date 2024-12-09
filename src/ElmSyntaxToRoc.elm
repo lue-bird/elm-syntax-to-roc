@@ -1003,6 +1003,9 @@ referenceToRoc reference =
                 "trimRight" ->
                     Just { moduleOrigin = Just "Str", name = "trimEnd" }
 
+                "toList" ->
+                    Just { moduleOrigin = Just "Str", name = "toUtf8" }
+
                 "join" ->
                     Just { moduleOrigin = Nothing, name = "stringJoin" }
 
@@ -1026,6 +1029,18 @@ referenceToRoc reference =
 
                 "contains" ->
                     Just { moduleOrigin = Nothing, name = "stringContains" }
+
+                "any" ->
+                    Just { moduleOrigin = Nothing, name = "stringAny" }
+
+                "all" ->
+                    Just { moduleOrigin = Nothing, name = "stringAll" }
+
+                "fromChar" ->
+                    Just { moduleOrigin = Nothing, name = "stringFromChar" }
+
+                "cons" ->
+                    Just { moduleOrigin = Nothing, name = "stringCons" }
 
                 "slice" ->
                     Just { moduleOrigin = Nothing, name = "stringSlice" }
@@ -1069,6 +1084,9 @@ referenceToRoc reference =
 
                 "sort" ->
                     Just { moduleOrigin = Just "List", name = "sortAsc" }
+
+                "reverse" ->
+                    Just { moduleOrigin = Just "List", name = "reverse" }
 
                 "repeat" ->
                     Just { moduleOrigin = Nothing, name = "listRepeat" }
@@ -2685,6 +2703,25 @@ stringReplace =
 
 stringContains =
     \\substring, string -> Str.contains string substring
+
+stringAny =
+    \\isNeedle, string -> List.any (Str.toUtf8 string) isNeedle
+
+stringAll =
+    \\isNeedle, string -> List.all (Str.toUtf8 string) isNeedle
+
+stringFromChar =
+    \\char ->
+        when Str.fromUtf8 [ char ] is
+            Err _ ->
+                ""
+            
+            Ok charAsString ->
+                charAsString
+
+stringCons =
+    \\headChar, tailString ->
+        Str.concat (stringFromChar headChar) tailString
 
 stringSlice =
     \\startIndex, endIndexExclusive, string ->

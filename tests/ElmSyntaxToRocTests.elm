@@ -73,6 +73,25 @@ stringReplace =
 stringContains =
     \\substring, string -> Str.contains string substring
 
+stringAny =
+    \\isNeedle, string -> List.any (Str.toUtf8 string) isNeedle
+
+stringAll =
+    \\isNeedle, string -> List.all (Str.toUtf8 string) isNeedle
+
+stringFromChar =
+    \\char ->
+        when Str.fromUtf8 [ char ] is
+            Err _ ->
+                ""
+            
+            Ok charAsString ->
+                charAsString
+
+stringCons =
+    \\headChar, tailString ->
+        Str.concat (stringFromChar headChar) tailString
+
 stringSlice =
     \\startIndex, endIndexExclusive, string ->
         realStartIndex =
