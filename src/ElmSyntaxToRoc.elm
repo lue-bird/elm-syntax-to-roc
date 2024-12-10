@@ -2589,6 +2589,70 @@ qualifiedReferenceToRocName reference =
                 ++ reference.name
 
 
+printRocExpressionParenthesizedIfSpaceSeparated : RocExpression -> Print
+printRocExpressionParenthesizedIfSpaceSeparated rocExpression =
+    if rocExpression |> rocExpressionIsSpaceSeparated then
+        printParenthesized (printRocExpressionNotParenthesized rocExpression)
+
+    else
+        printRocExpressionNotParenthesized rocExpression
+
+
+rocExpressionIsSpaceSeparated : RocExpression -> Bool
+rocExpressionIsSpaceSeparated rocExpression =
+    case rocExpression of
+        RocExpressionUnit ->
+            False
+
+        RocExpressionInteger _ ->
+            False
+
+        RocExpressionF64 _ ->
+            False
+
+        RocExpressionString _ ->
+            False
+
+        RocExpressionReference _ ->
+            False
+
+        RocExpressionRecordAccessFunction _ ->
+            False
+
+        RocExpressionRecordAccess _ ->
+            False
+
+        RocExpressionTuple _ ->
+            False
+
+        RocExpressionTriple _ ->
+            False
+
+        RocExpressionIfThenElse _ ->
+            True
+
+        RocExpressionList _ ->
+            False
+
+        RocExpressionRecord _ ->
+            False
+
+        RocExpressionRecordUpdate _ ->
+            False
+
+        RocExpressionCall _ ->
+            True
+
+        RocExpressionLambda _ ->
+            True
+
+        RocExpressionWhenIs _ ->
+            True
+
+        RocExpressionWithLocalDeclarations _ ->
+            True
+
+
 {-| Print a [`RocExpression`](#RocExpression)
 -}
 printRocExpressionNotParenthesized : RocExpression -> Print
@@ -2607,10 +2671,8 @@ printRocExpressionNotParenthesized rocExpression =
                                 ((call.argument0 :: call.argument1Up)
                                     |> Print.listMapAndIntersperseAndFlatten
                                         (\argument ->
-                                            printParenthesized
-                                                (printRocExpressionNotParenthesized
-                                                    argument
-                                                )
+                                            printRocExpressionParenthesizedIfSpaceSeparated
+                                                argument
                                         )
                                         Print.linebreakIndented
                                 )
@@ -2680,8 +2742,8 @@ printRocExpressionNotParenthesized rocExpression =
             printRocExpressionList elements
 
         RocExpressionRecordAccess syntaxRecordAccess ->
-            printParenthesized
-                (printRocExpressionNotParenthesized syntaxRecordAccess.record)
+            printRocExpressionParenthesizedIfSpaceSeparated
+                syntaxRecordAccess.record
                 |> Print.followedBy
                     (Print.exactly
                         ("." ++ (syntaxRecordAccess.field |> String.replace "." ""))

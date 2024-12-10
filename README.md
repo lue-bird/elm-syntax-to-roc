@@ -25,7 +25,7 @@ Ok """module [
 
 sample_plus2 =
     \n ->
-        Num.add (n) (List.sum ([ 2 ]))
+        Num.add n (List.sum [ 2 ])
 
 ..and some default declarations..
 """
