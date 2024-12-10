@@ -592,103 +592,161 @@ characterHex character =
     String.toUpper (intToHexString (Char.toCode character))
 
 
+charCodeIsLower : Int -> Bool
+charCodeIsLower code =
+    0x61 <= code && code <= 0x7A
+
+
+charCodeIsUpper : Int -> Bool
+charCodeIsUpper code =
+    code <= 0x5A && 0x41 <= code
+
+
+charCodeIsDigit : Int -> Bool
+charCodeIsDigit code =
+    code <= 0x39 && 0x30 <= code
+
+
+charIsLatinAlphaNumOrUnderscoreFast : Char -> Bool
+charIsLatinAlphaNumOrUnderscoreFast c =
+    let
+        code : Int
+        code =
+            Char.toCode c
+    in
+    charCodeIsLower code
+        || charCodeIsUpper code
+        || charCodeIsDigit code
+        || -- (c == '_')
+           (code == 95)
+
+
 characterIsNotPrint : Char -> Bool
 characterIsNotPrint character =
-    case Unicode.getCategory character of
-        Nothing ->
-            True
+    if
+        -- Unicode.getCategory is very expensive so we shortcut if at all possible
+        charIsLatinAlphaNumOrUnderscoreFast character
+            || (case character of
+                    ' ' ->
+                        True
 
-        Just category ->
-            case category of
-                Unicode.SeparatorLine ->
-                    True
+                    '.' ->
+                        True
 
-                Unicode.SeparatorParagraph ->
-                    True
+                    '!' ->
+                        True
 
-                Unicode.OtherControl ->
-                    True
+                    '?' ->
+                        True
 
-                Unicode.OtherFormat ->
-                    True
+                    '-' ->
+                        True
 
-                Unicode.OtherSurrogate ->
-                    True
+                    ':' ->
+                        True
 
-                Unicode.OtherPrivateUse ->
-                    True
+                    _ ->
+                        False
+               )
+    then
+        False
 
-                Unicode.OtherNotAssigned ->
-                    True
+    else
+        case Unicode.getCategory character of
+            Nothing ->
+                True
 
-                Unicode.LetterUppercase ->
-                    False
+            Just category ->
+                case category of
+                    Unicode.SeparatorLine ->
+                        True
 
-                Unicode.LetterLowercase ->
-                    False
+                    Unicode.SeparatorParagraph ->
+                        True
 
-                Unicode.LetterTitlecase ->
-                    False
+                    Unicode.OtherControl ->
+                        True
 
-                Unicode.MarkNonSpacing ->
-                    False
+                    Unicode.OtherFormat ->
+                        True
 
-                Unicode.MarkSpacingCombining ->
-                    False
+                    Unicode.OtherSurrogate ->
+                        True
 
-                Unicode.MarkEnclosing ->
-                    False
+                    Unicode.OtherPrivateUse ->
+                        True
 
-                Unicode.NumberDecimalDigit ->
-                    False
+                    Unicode.OtherNotAssigned ->
+                        True
 
-                Unicode.NumberLetter ->
-                    False
+                    Unicode.LetterUppercase ->
+                        False
 
-                Unicode.NumberOther ->
-                    False
+                    Unicode.LetterLowercase ->
+                        False
 
-                Unicode.SeparatorSpace ->
-                    True
+                    Unicode.LetterTitlecase ->
+                        False
 
-                Unicode.LetterModifier ->
-                    False
+                    Unicode.MarkNonSpacing ->
+                        False
 
-                Unicode.LetterOther ->
-                    False
+                    Unicode.MarkSpacingCombining ->
+                        False
 
-                Unicode.PunctuationConnector ->
-                    False
+                    Unicode.MarkEnclosing ->
+                        False
 
-                Unicode.PunctuationDash ->
-                    False
+                    Unicode.NumberDecimalDigit ->
+                        False
 
-                Unicode.PunctuationOpen ->
-                    False
+                    Unicode.NumberLetter ->
+                        False
 
-                Unicode.PunctuationClose ->
-                    False
+                    Unicode.NumberOther ->
+                        False
 
-                Unicode.PunctuationInitialQuote ->
-                    False
+                    Unicode.SeparatorSpace ->
+                        True
 
-                Unicode.PunctuationFinalQuote ->
-                    False
+                    Unicode.LetterModifier ->
+                        False
 
-                Unicode.PunctuationOther ->
-                    False
+                    Unicode.LetterOther ->
+                        False
 
-                Unicode.SymbolMath ->
-                    False
+                    Unicode.PunctuationConnector ->
+                        False
 
-                Unicode.SymbolCurrency ->
-                    False
+                    Unicode.PunctuationDash ->
+                        False
 
-                Unicode.SymbolModifier ->
-                    False
+                    Unicode.PunctuationOpen ->
+                        False
 
-                Unicode.SymbolOther ->
-                    False
+                    Unicode.PunctuationClose ->
+                        False
+
+                    Unicode.PunctuationInitialQuote ->
+                        False
+
+                    Unicode.PunctuationFinalQuote ->
+                        False
+
+                    Unicode.PunctuationOther ->
+                        False
+
+                    Unicode.SymbolMath ->
+                        False
+
+                    Unicode.SymbolCurrency ->
+                        False
+
+                    Unicode.SymbolModifier ->
+                        False
+
+                    Unicode.SymbolOther ->
+                        False
 
 
 pattern :
