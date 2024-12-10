@@ -2217,7 +2217,7 @@ expression moduleOriginLookup (Elm.Syntax.Node.Node _ syntaxExpression) =
                                     { called =
                                         RocExpressionReference
                                             { moduleOrigin = Just "Str"
-                                            , name = "append"
+                                            , name = "concat"
                                             }
                                     , argument0 = left
                                     , argument1Up = [ right ]
@@ -2228,7 +2228,7 @@ expression moduleOriginLookup (Elm.Syntax.Node.Node _ syntaxExpression) =
                                     { called =
                                         RocExpressionReference
                                             { moduleOrigin = Just "List"
-                                            , name = "append"
+                                            , name = "concat"
                                             }
                                     , argument0 = left
                                     , argument1Up = [ right ]
@@ -2502,7 +2502,7 @@ rocExpressionIsDefinitelyOfTypeString rocExpression =
 
         RocExpressionCall call ->
             call.called
-                == RocExpressionReference { moduleOrigin = Just "Str", name = "append" }
+                == RocExpressionReference { moduleOrigin = Just "Str", name = "concat" }
                 && ((call.argument1Up |> List.length) == 1)
 
         RocExpressionUnit ->
