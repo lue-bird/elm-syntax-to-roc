@@ -291,15 +291,28 @@ expectTranspiledToRocStringAs expected source =
             Expect.fail ("failed to parse actual source: " ++ (deadEnds |> Debug.toString))
 
         Ok parsed ->
-            case [ parsed ] |> ElmSyntaxToRoc.modules of
-                Err transpilationError ->
-                    Expect.fail ("failed to transpile the parsed elm to roc: " ++ transpilationError)
+            let
+                transpiledResult :
+                    { errors : List String
+                    , declarations : List { name : String, result : ElmSyntaxToRoc.RocExpression }
+                    }
+                transpiledResult =
+                    [ parsed ] |> ElmSyntaxToRoc.modules
+            in
+            case transpiledResult.errors of
+                transpilationError0 :: transpilationError1Up ->
+                    Expect.fail
+                        ("failed to transpile the parsed elm to roc: "
+                            ++ ((transpilationError0 :: transpilationError1Up)
+                                    |> String.join " and "
+                               )
+                        )
 
-                Ok transpiledDeclarations ->
+                [] ->
                     let
                         printed : String
                         printed =
-                            transpiledDeclarations |> ElmSyntaxToRoc.rocDeclarationsToModuleString
+                            transpiledResult.declarations |> ElmSyntaxToRoc.rocDeclarationsToModuleString
                     in
                     if printed == expected then
                         Expect.pass

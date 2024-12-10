@@ -1062,6 +1062,12 @@ referenceToRoc reference =
                 "fromCode" ->
                     Just { moduleOrigin = Just "Num", name = "intCast" }
 
+                "toLower" ->
+                    Just { moduleOrigin = Just "Num", name = "charToLower" }
+
+                "toUpper" ->
+                    Just { moduleOrigin = Just "Num", name = "charToUpper" }
+
                 _ ->
                     Nothing
 
@@ -1200,6 +1206,53 @@ referenceToRoc reference =
 
                 "filter" ->
                     Just { moduleOrigin = Nothing, name = "dictFilter" }
+
+                _ ->
+                    Nothing
+
+        [ "Parser" ] ->
+            case reference.name of
+                "Expecting" ->
+                    Just { moduleOrigin = Nothing, name = "ParserExpecting" }
+
+                "ExpectingInt" ->
+                    Just { moduleOrigin = Nothing, name = "ParserExpectingInt" }
+
+                "ExpectingHex" ->
+                    Just { moduleOrigin = Nothing, name = "ParserExpectingHex" }
+
+                "ExpectingOctal" ->
+                    Just { moduleOrigin = Nothing, name = "ParserExpectingOctal" }
+
+                "ExpectingBinary" ->
+                    Just { moduleOrigin = Nothing, name = "ParserExpectingBinary" }
+
+                "ExpectingFloat" ->
+                    Just { moduleOrigin = Nothing, name = "ParserExpectingFloat" }
+
+                "ExpectingNumber" ->
+                    Just { moduleOrigin = Nothing, name = "ParserExpectingNumber" }
+
+                "ExpectingVariable" ->
+                    Just { moduleOrigin = Nothing, name = "ParserExpectingVariable" }
+
+                "ExpectingSymbol" ->
+                    Just { moduleOrigin = Nothing, name = "ParserExpectingSymbol" }
+
+                "ExpectingKeyword" ->
+                    Just { moduleOrigin = Nothing, name = "ParserExpectingKeyword" }
+
+                "ExpectingEnd" ->
+                    Just { moduleOrigin = Nothing, name = "ParserExpectingEnd" }
+
+                "UnexpectedChar" ->
+                    Just { moduleOrigin = Nothing, name = "ParserUnexpectedChar" }
+
+                "Problem" ->
+                    Just { moduleOrigin = Nothing, name = "ParserProblem" }
+
+                "BadRepeat" ->
+                    Just { moduleOrigin = Nothing, name = "ParserBadRepeat" }
 
                 _ ->
                     Nothing
@@ -1544,6 +1597,9 @@ printParenthesized notParenthesizedPrint =
 
 {-| Transpile a list of [`Elm.Syntax.Declaration.Declaration`](https://dark.elm.dmy.fr/packages/stil4m/elm-syntax/latest/Elm-Syntax-Declaration#Declaration)s
 across multiple modules to [`RocDeclaration`]s.
+Declarations that use unsupported stuff like parser kernel code (directly or indirectly)
+will not be present in the final declarations.
+Their errors can be found alongside the valid transpiled declarations.
 
 The given list of files must also include files from used dependencies
 including `elm/core`.
@@ -1551,17 +1607,17 @@ including `elm/core`.
 modules :
     List Elm.Syntax.File.File
     ->
-        Result
-            String
-            (List
+        { errors : List String
+        , declarations :
+            List
                 { name : String
                 , result : RocExpression
                 }
-            )
+        }
 modules syntaxDeclarationsIncludingCore =
     let
-        syntaxDeclarations : List Elm.Syntax.File.File
-        syntaxDeclarations =
+        syntaxModules : List Elm.Syntax.File.File
+        syntaxModules =
             syntaxDeclarationsIncludingCore
                 |> List.filter
                     (\syntaxModule ->
@@ -1609,6 +1665,18 @@ modules syntaxDeclarationsIncludingCore =
                             [ "Task" ] ->
                                 False
 
+                            [ "Json", "Decode" ] ->
+                                False
+
+                            [ "Json", "Encode" ] ->
+                                False
+
+                            [ "Parser" ] ->
+                                False
+
+                            [ "Parser", "Advanced" ] ->
+                                False
+
                             _ ->
                                 True
                     )
@@ -1620,7 +1688,7 @@ modules syntaxDeclarationsIncludingCore =
                 , choiceTypesExposingVariants : FastDict.Dict String (FastSet.Set String)
                 }
         moduleMembers =
-            syntaxDeclarations
+            syntaxModules
                 |> List.foldl
                     (\syntaxModule soFar ->
                         soFar
@@ -1685,9 +1753,9 @@ modules syntaxDeclarationsIncludingCore =
                     )
                     FastDict.empty
     in
-    syntaxDeclarations
-        |> List.concatMap
-            (\syntaxModule ->
+    syntaxModules
+        |> List.foldr
+            (\syntaxModule soFarAcrossModules ->
                 let
                     moduleName : Elm.Syntax.ModuleName.ModuleName
                     moduleName =
@@ -1723,15 +1791,18 @@ modules syntaxDeclarationsIncludingCore =
                             )
                 in
                 syntaxModule.declarations
-                    |> List.filterMap
-                        (\(Elm.Syntax.Node.Node _ declaration) ->
+                    |> List.foldr
+                        (\(Elm.Syntax.Node.Node _ declaration) soFar ->
                             case declaration of
                                 Elm.Syntax.Declaration.FunctionDeclaration syntaxValueOrFunctionDeclaration ->
-                                    syntaxValueOrFunctionDeclaration.declaration
-                                        |> Elm.Syntax.Node.value
-                                        |> valueOrFunctionDeclaration moduleOriginLookup
-                                        |> Result.map
-                                            (\rocDeclaration ->
+                                    case
+                                        syntaxValueOrFunctionDeclaration.declaration
+                                            |> Elm.Syntax.Node.value
+                                            |> valueOrFunctionDeclaration moduleOriginLookup
+                                    of
+                                        Ok rocDeclaration ->
+                                            { errors = soFar.errors
+                                            , declarations =
                                                 { rocDeclaration
                                                     | name =
                                                         { moduleOrigin = moduleName
@@ -1739,26 +1810,34 @@ modules syntaxDeclarationsIncludingCore =
                                                         }
                                                             |> referenceToRocName
                                                 }
-                                            )
-                                        |> Just
+                                                    :: soFar.declarations
+                                            }
+
+                                        Err error ->
+                                            { declarations = soFar.declarations
+                                            , errors = error :: soFar.errors
+                                            }
 
                                 Elm.Syntax.Declaration.AliasDeclaration _ ->
-                                    Nothing
+                                    soFar
 
                                 Elm.Syntax.Declaration.CustomTypeDeclaration _ ->
-                                    Nothing
+                                    soFar
 
                                 Elm.Syntax.Declaration.PortDeclaration _ ->
-                                    Nothing
+                                    soFar
 
                                 Elm.Syntax.Declaration.InfixDeclaration _ ->
-                                    Nothing
+                                    soFar
 
                                 Elm.Syntax.Declaration.Destructuring _ _ ->
-                                    Nothing
+                                    soFar
                         )
+                        soFarAcrossModules
             )
-        |> listMapAndCombineOk identity
+            { errors = []
+            , declarations = []
+            }
 
 
 moduleHeaderName : Elm.Syntax.Module.Module -> Elm.Syntax.ModuleName.ModuleName
