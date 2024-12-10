@@ -16,7 +16,8 @@ plus2 n =
         (\syntaxModule ->
             [ syntaxModule ]
                 |> ElmSyntaxToRoc.modules
-                |> Result.map ElmSyntaxToRoc.rocDeclarationsToModuleString
+                |> .declarations
+                |> ElmSyntaxToRoc.rocDeclarationsToModuleString
         )
 -->
 Ok """module [
