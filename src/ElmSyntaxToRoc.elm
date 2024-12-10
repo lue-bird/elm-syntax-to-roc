@@ -1267,13 +1267,51 @@ referenceToRocName :
     }
     -> String
 referenceToRocName reference =
-    (if reference.name |> stringFirstCharIsUpper then
+    ((if reference.name |> stringFirstCharIsUpper then
         reference.moduleOrigin |> String.concat
 
-     else
+      else
         reference.moduleOrigin |> String.concat |> stringFirstCharToLower
-    )
+     )
         ++ (reference.name |> stringFirstCharToUpper)
+    )
+        |> rocNameSanitize
+
+
+rocNameSanitize : String -> String
+rocNameSanitize unsanitizedName =
+    case unsanitizedName of
+        "is" ->
+            "is0"
+
+        "crash" ->
+            "crash0"
+
+        "dbg" ->
+            "dbg0"
+
+        "expect" ->
+            "expect0"
+
+        "return" ->
+            "return0"
+
+        "try" ->
+            "try0"
+
+        "when" ->
+            "when0"
+
+        unsanitizedNameNotKeyword ->
+            unsanitizedNameNotKeyword
+                |> String.map
+                    (\char ->
+                        if char |> Char.isAlphaNum then
+                            char
+
+                        else
+                            '0'
+                    )
 
 
 printRocPatternNotParenthesized : RocPattern -> Print
@@ -2151,7 +2189,9 @@ expression moduleOriginLookup (Elm.Syntax.Node.Node _ syntaxExpression) =
                     (case moduleOriginLookup |> FastDict.get ( qualification, name ) of
                         Nothing ->
                             -- locally declared or variable
-                            { moduleOrigin = Nothing, name = name }
+                            { moduleOrigin = Nothing
+                            , name = name |> rocNameSanitize
+                            }
 
                         Just moduleOrigin ->
                             case { moduleOrigin = moduleOrigin, name = name } |> referenceToRoc of
@@ -2162,7 +2202,9 @@ expression moduleOriginLookup (Elm.Syntax.Node.Node _ syntaxExpression) =
                                     { moduleOrigin = Nothing
                                     , name =
                                         referenceToRocName
-                                            { moduleOrigin = moduleOrigin, name = name }
+                                            { moduleOrigin = moduleOrigin
+                                            , name = name
+                                            }
                                     }
                     )
                 )
