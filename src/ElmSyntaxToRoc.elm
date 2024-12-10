@@ -1388,22 +1388,26 @@ printPatternListExact elements =
 
         element0 :: element1Up ->
             let
-                elementsPrints : Print
-                elementsPrints =
+                elementsPrint : Print
+                elementsPrint =
                     (element0 :: element1Up)
                         |> Print.listMapAndIntersperseAndFlatten
                             (\elementNode ->
                                 Print.withIndentIncreasedBy 2
                                     (printRocPatternNotParenthesized elementNode)
                             )
-                            (Print.linebreakIndented
+                            (Print.exactly ","
+                                |> Print.followedBy Print.linebreakIndented
                                 |> Print.followedBy
-                                    (Print.exactly ", ")
+                                    (Print.exactly "  ")
                             )
             in
             printExactlySquareOpeningSpace
-                |> Print.followedBy elementsPrints
-                |> Print.followedBy (Print.exactly " ")
+                |> Print.followedBy elementsPrint
+                |> Print.followedBy
+                    (Print.spaceOrLinebreakIndented
+                        (elementsPrint |> Print.lineSpread)
+                    )
                 |> Print.followedBy printExactlySquareClosing
 
 
@@ -1590,9 +1594,10 @@ printRocExpressionRecord syntaxRecordFields =
         Print.exactly "{}"
 
     else
-        printExactlyCurlyOpeningSpace
-            |> Print.followedBy
-                (syntaxRecordFields
+        let
+            fieldsPrint : Print
+            fieldsPrint =
+                syntaxRecordFields
                     |> FastDict.toList
                     |> Print.listReverseAndMapAndIntersperseAndFlatten
                         (\( fieldName, fieldValue ) ->
@@ -1607,11 +1612,18 @@ printRocExpressionRecord syntaxRecordFields =
                                         )
                                 )
                         )
-                        (Print.linebreakIndented
-                            |> Print.followedBy printExactlyCommaSpace
+                        (Print.exactly ","
+                            |> Print.followedBy Print.linebreakIndented
+                            |> Print.followedBy
+                                (Print.exactly "  ")
                         )
+        in
+        printExactlyCurlyOpeningSpace
+            |> Print.followedBy fieldsPrint
+            |> Print.followedBy
+                (Print.spaceOrLinebreakIndented
+                    (fieldsPrint |> Print.lineSpread)
                 )
-            |> Print.followedBy Print.linebreakIndented
             |> Print.followedBy printExactlyCurlyClosing
 
 
@@ -2704,13 +2716,14 @@ printRocExpressionNotParenthesized rocExpression =
                     ([ parts.part0, parts.part1 ]
                         |> Print.listMapAndIntersperseAndFlatten
                             printRocExpressionNotParenthesized
-                            (Print.linebreakIndented
+                            (Print.exactly ","
+                                |> Print.followedBy Print.linebreakIndented
                                 |> Print.followedBy
-                                    (Print.exactly ", ")
+                                    (Print.exactly "  ")
                             )
                     )
                 |> Print.followedBy Print.linebreakIndented
-                |> Print.followedBy (Print.exactly " )")
+                |> Print.followedBy (Print.exactly ")")
 
         RocExpressionTriple parts ->
             Print.exactly "( "
@@ -2718,13 +2731,14 @@ printRocExpressionNotParenthesized rocExpression =
                     ([ parts.part0, parts.part1, parts.part2 ]
                         |> Print.listMapAndIntersperseAndFlatten
                             printRocExpressionNotParenthesized
-                            (Print.linebreakIndented
+                            (Print.exactly ","
+                                |> Print.followedBy Print.linebreakIndented
                                 |> Print.followedBy
-                                    (Print.exactly ", ")
+                                    (Print.exactly "  ")
                             )
                     )
                 |> Print.followedBy Print.linebreakIndented
-                |> Print.followedBy (Print.exactly " )")
+                |> Print.followedBy (Print.exactly ")")
 
         RocExpressionWithLocalDeclarations expressionWithLocalDeclarations ->
             printRocExpressionWithLocalDeclarations expressionWithLocalDeclarations
@@ -2814,8 +2828,10 @@ printRocExpressionRecordUpdate syntaxRecordUpdate =
                                                 )
                                             )
                                 )
-                                (Print.linebreakIndented
-                                    |> Print.followedBy printExactlyCommaSpace
+                                (Print.exactly ","
+                                    |> Print.followedBy Print.linebreakIndented
+                                    |> Print.followedBy
+                                        (Print.exactly "  ")
                                 )
                         )
                 )
