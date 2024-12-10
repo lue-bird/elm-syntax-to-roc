@@ -1677,6 +1677,123 @@ modules syntaxDeclarationsIncludingCore =
                             [ "Parser", "Advanced" ] ->
                                 False
 
+                            [ "Regex" ] ->
+                                False
+
+                            [ "File" ] ->
+                                False
+
+                            [ "Bytes" ] ->
+                                False
+
+                            [ "Bytes", "Encode" ] ->
+                                False
+
+                            [ "Bytes", "Decode" ] ->
+                                False
+
+                            [ "Http" ] ->
+                                False
+
+                            [ "VirtualDom" ] ->
+                                False
+
+                            [ "Browser" ] ->
+                                False
+
+                            [ "Browser", "Events" ] ->
+                                False
+
+                            [ "Browser", "Navigation" ] ->
+                                False
+
+                            [ "Browser", "Dom" ] ->
+                                False
+
+                            [ "Html" ] ->
+                                False
+
+                            [ "Html", "Attributes" ] ->
+                                False
+
+                            [ "Html", "Events" ] ->
+                                False
+
+                            [ "Html", "Keyed" ] ->
+                                False
+
+                            [ "Html", "Lazy" ] ->
+                                False
+
+                            [ "Svg" ] ->
+                                False
+
+                            [ "Svg", "Attributes" ] ->
+                                False
+
+                            [ "Svg", "Events" ] ->
+                                False
+
+                            [ "Svg", "Keyed" ] ->
+                                False
+
+                            [ "Svg", "Lazy" ] ->
+                                False
+
+                            [ "Time" ] ->
+                                False
+
+                            [ "Random" ] ->
+                                False
+
+                            [ "Url" ] ->
+                                False
+
+                            [ "Url", "Builder" ] ->
+                                False
+
+                            [ "Url", "Parser" ] ->
+                                False
+
+                            [ "Url", "Parser", "Query" ] ->
+                                False
+
+                            [ "Markdown" ] ->
+                                False
+
+                            [ "Benchmark" ] ->
+                                False
+
+                            [ "WebGL" ] ->
+                                False
+
+                            [ "WebGL", "Settings" ] ->
+                                False
+
+                            [ "WebGL", "Settings", "Blend" ] ->
+                                False
+
+                            [ "WebGL", "Settings", "DepthTest" ] ->
+                                False
+
+                            [ "WebGL", "Settings", "StencilTest" ] ->
+                                False
+
+                            [ "WebGL", "Texture" ] ->
+                                False
+
+                            [ "Math", "Matrix4" ] ->
+                                False
+
+                            [ "Math", "Vector2" ] ->
+                                False
+
+                            [ "Math", "Vector3" ] ->
+                                False
+
+                            [ "Math", "Vector4" ] ->
+                                False
+
                             _ ->
                                 True
                     )

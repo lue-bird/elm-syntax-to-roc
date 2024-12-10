@@ -38,7 +38,7 @@ run [this node script](https://github.com/lue-bird/elm-syntax-to-roc/tree/main/n
 
 -   only a subset of elm is currently supported. not supported:
     -   `elm/regex`, `elm/file`, `elm/bytes`, `elm/http`, `elm/random`, `elm/url`, `elm/json`, `elm/parser`, `elm/virtual-dom`,
-        `elm/html`, `elm/svg`, `elm/browser`, `elm/time`, `elm-explorations/markdown`, `elm-explorations/webgl`, `elm-explorations/benchmark`
+        `elm/html`, `elm/svg`, `elm/browser`, `elm/time`, `elm-explorations/markdown`, `elm-explorations/webgl`, `elm-explorations/benchmark`, `elm-explorations/linear-algebra`
     -   `Platform`, `Platform.Cmd`, `Platform.Sub`, `Task`, `Process`
     -   ports, glsl, the prefix operator functions `(++)`, `(>>)`, `(<<)`
         curried functions like `List.map (Basics.remainderBy 2)` or `Result.map2 Tuple.pair a b`
