@@ -2452,12 +2452,38 @@ expression moduleOriginLookup (Elm.Syntax.Node.Node _ syntaxExpression) =
                 declaration0Node :: declaration1UpNode ->
                     Result.map3
                         (\declaration0 declaration1Up result ->
+                            let
+                                combinedFurtherVariableDestructurings : List { pattern : RocPattern, variable : String }
+                                combinedFurtherVariableDestructurings =
+                                    declaration0.furtherVariableDestructurings
+                                        ++ (declaration1Up
+                                                |> List.concatMap .furtherVariableDestructurings
+                                           )
+                            in
                             RocExpressionWithLocalDeclarations
-                                { declaration0 = declaration0
-                                , declaration1Up = declaration1Up
+                                { declaration0 = declaration0.main
+                                , declaration1Up =
+                                    (declaration1Up
+                                        |> List.map .main
+                                    )
+                                        ++ (combinedFurtherVariableDestructurings
+                                                |> List.map
+                                                    (\furtherDestructuring ->
+                                                        RocLocalDestructuring
+                                                            { pattern = furtherDestructuring.pattern
+                                                            , expression =
+                                                                RocExpressionReference
+                                                                    { moduleOrigin = Nothing
+                                                                    , name = furtherDestructuring.variable
+                                                                    }
+                                                            }
+                                                    )
+                                           )
                                 , result = result
                                 }
                         )
+                        -- destructuring patterns currently do not accept as
+                        -- https://github.com/roc-lang/roc/issues/7328
                         (declaration0Node |> letDeclaration moduleOriginLookup)
                         (declaration1UpNode
                             |> listMapAndCombineOk
@@ -2544,26 +2570,228 @@ case_ moduleOriginLookup ( patternNode, resultNode ) =
 letDeclaration :
     ModuleOriginLookup
     -> Elm.Syntax.Node.Node Elm.Syntax.Expression.LetDeclaration
-    -> Result String RocLocalDeclaration
+    ->
+        Result
+            String
+            { main : RocLocalDeclaration
+            , furtherVariableDestructurings :
+                List { pattern : RocPattern, variable : String }
+            }
 letDeclaration moduleOriginLookup (Elm.Syntax.Node.Node _ syntaxLetDeclaration) =
     case syntaxLetDeclaration of
         Elm.Syntax.Expression.LetDestructuring destructuringPatternNode destructuringExpressionNode ->
             Result.map2
                 (\destructuringPattern destructuringExpression ->
-                    RocLocalDestructuring
-                        { pattern = destructuringPattern
-                        , expression = destructuringExpression
-                        }
+                    let
+                        destructuringPatternExtractedAs :
+                            { main : RocPattern
+                            , furtherVariableDestructurings :
+                                List { pattern : RocPattern, variable : String }
+                            }
+                        destructuringPatternExtractedAs =
+                            destructuringPattern
+                                |> destructuringPatternExtractAs
+                    in
+                    { main =
+                        RocLocalDestructuring
+                            { pattern = destructuringPatternExtractedAs.main
+                            , expression = destructuringExpression
+                            }
+                    , furtherVariableDestructurings =
+                        destructuringPatternExtractedAs.furtherVariableDestructurings
+                    }
                 )
                 (destructuringPatternNode |> pattern moduleOriginLookup)
                 (destructuringExpressionNode |> expression moduleOriginLookup)
 
         Elm.Syntax.Expression.LetFunction localValueOrFunction ->
-            Result.map RocLocalDeclarationValueOrFunction
+            Result.map
+                (\valueOrFunction ->
+                    { main = RocLocalDeclarationValueOrFunction valueOrFunction
+                    , furtherVariableDestructurings = []
+                    }
+                )
                 (localValueOrFunction.declaration
                     |> Elm.Syntax.Node.value
                     |> valueOrFunctionDeclaration moduleOriginLookup
                 )
+
+
+destructuringPatternExtractAs :
+    RocPattern
+    ->
+        { main : RocPattern
+        , furtherVariableDestructurings :
+            List { pattern : RocPattern, variable : String }
+        }
+destructuringPatternExtractAs rocPattern =
+    case rocPattern of
+        RocPatternIgnore ->
+            { main = RocPatternIgnore, furtherVariableDestructurings = [] }
+
+        RocPatternInteger intValue ->
+            { main = RocPatternInteger intValue, furtherVariableDestructurings = [] }
+
+        RocPatternString stringValue ->
+            { main = RocPatternString stringValue, furtherVariableDestructurings = [] }
+
+        RocPatternVariable name ->
+            { main = RocPatternVariable name, furtherVariableDestructurings = [] }
+
+        RocPatternRecord fieldNames ->
+            { main = RocPatternRecord fieldNames, furtherVariableDestructurings = [] }
+
+        RocPatternTuple parts ->
+            let
+                part0ExtractedAs :
+                    { main : RocPattern
+                    , furtherVariableDestructurings :
+                        List { pattern : RocPattern, variable : String }
+                    }
+                part0ExtractedAs =
+                    parts.part0 |> destructuringPatternExtractAs
+
+                part1ExtractedAs :
+                    { main : RocPattern
+                    , furtherVariableDestructurings :
+                        List { pattern : RocPattern, variable : String }
+                    }
+                part1ExtractedAs =
+                    parts.part1 |> destructuringPatternExtractAs
+            in
+            { main =
+                RocPatternTuple
+                    { part0 = part0ExtractedAs.main
+                    , part1 = part1ExtractedAs.main
+                    }
+            , furtherVariableDestructurings =
+                part0ExtractedAs.furtherVariableDestructurings
+                    ++ part1ExtractedAs.furtherVariableDestructurings
+            }
+
+        RocPatternTriple parts ->
+            let
+                part0ExtractedAs :
+                    { main : RocPattern
+                    , furtherVariableDestructurings :
+                        List { pattern : RocPattern, variable : String }
+                    }
+                part0ExtractedAs =
+                    parts.part0 |> destructuringPatternExtractAs
+
+                part1ExtractedAs :
+                    { main : RocPattern
+                    , furtherVariableDestructurings :
+                        List { pattern : RocPattern, variable : String }
+                    }
+                part1ExtractedAs =
+                    parts.part1 |> destructuringPatternExtractAs
+
+                part2ExtractedAs :
+                    { main : RocPattern
+                    , furtherVariableDestructurings :
+                        List { pattern : RocPattern, variable : String }
+                    }
+                part2ExtractedAs =
+                    parts.part2 |> destructuringPatternExtractAs
+            in
+            { main =
+                RocPatternTriple
+                    { part0 = part0ExtractedAs.main
+                    , part1 = part1ExtractedAs.main
+                    , part2 = part2ExtractedAs.main
+                    }
+            , furtherVariableDestructurings =
+                part0ExtractedAs.furtherVariableDestructurings
+                    ++ part1ExtractedAs.furtherVariableDestructurings
+            }
+
+        RocPatternListExact elements ->
+            let
+                elementsExtractedAs :
+                    List
+                        { main : RocPattern
+                        , furtherVariableDestructurings :
+                            List { pattern : RocPattern, variable : String }
+                        }
+                elementsExtractedAs =
+                    elements
+                        |> List.map destructuringPatternExtractAs
+            in
+            { main =
+                RocPatternListExact
+                    (elementsExtractedAs
+                        |> List.map .main
+                    )
+            , furtherVariableDestructurings =
+                elementsExtractedAs
+                    |> List.concatMap .furtherVariableDestructurings
+            }
+
+        RocPatternTagged rocPatternTagged ->
+            let
+                parametersExtractedAs :
+                    List
+                        { main : RocPattern
+                        , furtherVariableDestructurings :
+                            List { pattern : RocPattern, variable : String }
+                        }
+                parametersExtractedAs =
+                    rocPatternTagged.parameters
+                        |> List.map destructuringPatternExtractAs
+            in
+            { main =
+                RocPatternTagged
+                    { name = rocPatternTagged.name
+                    , parameters =
+                        parametersExtractedAs
+                            |> List.map .main
+                    }
+            , furtherVariableDestructurings =
+                parametersExtractedAs
+                    |> List.concatMap .furtherVariableDestructurings
+            }
+
+        RocPatternListCons rocPatternListCons ->
+            let
+                initialElement0ExtractedAs :
+                    { main : RocPattern
+                    , furtherVariableDestructurings :
+                        List { pattern : RocPattern, variable : String }
+                    }
+                initialElement0ExtractedAs =
+                    rocPatternListCons.initialElement0
+                        |> destructuringPatternExtractAs
+
+                initialElement1UpExtractedAs :
+                    List
+                        { main : RocPattern
+                        , furtherVariableDestructurings :
+                            List { pattern : RocPattern, variable : String }
+                        }
+                initialElement1UpExtractedAs =
+                    rocPatternListCons.initialElement1Up
+                        |> List.map destructuringPatternExtractAs
+            in
+            { main =
+                RocPatternListCons
+                    { initialElement0 = initialElement0ExtractedAs.main
+                    , initialElement1Up =
+                        initialElement1UpExtractedAs
+                            |> List.map .main
+                    , tailVariable = rocPatternListCons.tailVariable
+                    }
+            , furtherVariableDestructurings =
+                initialElement0ExtractedAs.furtherVariableDestructurings
+                    ++ (initialElement1UpExtractedAs
+                            |> List.concatMap .furtherVariableDestructurings
+                       )
+            }
+
+        RocPatternAs rocPatternAs ->
+            { main = RocPatternVariable rocPatternAs.variable
+            , furtherVariableDestructurings = [ rocPatternAs ]
+            }
 
 
 expressionOperatorToRocFunctionReference :
