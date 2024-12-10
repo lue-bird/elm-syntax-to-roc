@@ -3082,7 +3082,7 @@ stringToUpper =
 
 charToLower =
     \\char ->
-        -- only basic latin letters for now
+        # only basic latin letters for now
         if char >= 'A' && char <= 'Z' then
             'a' + (char - 'A')
         
@@ -3091,7 +3091,7 @@ charToLower =
 
 charToUpper =
     \\char ->
-        -- only basic latin letters for now
+        # only basic latin letters for now
         if char >= 'a' && char <= 'z' then
             'A' + (char - 'a')
         
