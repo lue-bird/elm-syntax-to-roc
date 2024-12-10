@@ -1396,10 +1396,9 @@ printPatternListExact elements =
                                 Print.withIndentIncreasedBy 2
                                     (printRocPatternNotParenthesized elementNode)
                             )
-                            (Print.exactly ","
-                                |> Print.followedBy Print.linebreakIndented
+                            (Print.linebreakIndented
                                 |> Print.followedBy
-                                    (Print.exactly "  ")
+                                    (Print.exactly ", ")
                             )
             in
             printExactlySquareOpeningSpace
@@ -1612,10 +1611,9 @@ printRocExpressionRecord syntaxRecordFields =
                                         )
                                 )
                         )
-                        (Print.exactly ","
-                            |> Print.followedBy Print.linebreakIndented
+                        (Print.linebreakIndented
                             |> Print.followedBy
-                                (Print.exactly "  ")
+                                (Print.exactly ", ")
                         )
         in
         printExactlyCurlyOpeningSpace
@@ -2716,10 +2714,9 @@ printRocExpressionNotParenthesized rocExpression =
                     ([ parts.part0, parts.part1 ]
                         |> Print.listMapAndIntersperseAndFlatten
                             printRocExpressionNotParenthesized
-                            (Print.exactly ","
-                                |> Print.followedBy Print.linebreakIndented
+                            (Print.linebreakIndented
                                 |> Print.followedBy
-                                    (Print.exactly "  ")
+                                    (Print.exactly ", ")
                             )
                     )
                 |> Print.followedBy Print.linebreakIndented
@@ -2731,10 +2728,9 @@ printRocExpressionNotParenthesized rocExpression =
                     ([ parts.part0, parts.part1, parts.part2 ]
                         |> Print.listMapAndIntersperseAndFlatten
                             printRocExpressionNotParenthesized
-                            (Print.exactly ","
-                                |> Print.followedBy Print.linebreakIndented
+                            (Print.linebreakIndented
                                 |> Print.followedBy
-                                    (Print.exactly "  ")
+                                    (Print.exactly ", ")
                             )
                     )
                 |> Print.followedBy Print.linebreakIndented
@@ -2828,10 +2824,9 @@ printRocExpressionRecordUpdate syntaxRecordUpdate =
                                                 )
                                             )
                                 )
-                                (Print.exactly ","
-                                    |> Print.followedBy Print.linebreakIndented
+                                (Print.linebreakIndented
                                     |> Print.followedBy
-                                        (Print.exactly "  ")
+                                        (Print.exactly ", ")
                                 )
                         )
                 )
