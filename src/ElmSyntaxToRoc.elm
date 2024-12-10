@@ -2672,7 +2672,7 @@ printRocExpressionNotParenthesized rocExpression =
     -- IGNORE TCO
     case rocExpression of
         RocExpressionUnit ->
-            Print.exactly "()"
+            Print.exactly "{}"
 
         RocExpressionCall call ->
             printRocExpressionNotParenthesized call.called
@@ -2851,7 +2851,18 @@ printRocExpressionLambda syntaxLambda =
         |> Print.followedBy
             ((syntaxLambda.parameter0 :: syntaxLambda.parameter1Up)
                 |> Print.listMapAndIntersperseAndFlatten
-                    (\parameter -> parameter |> printRocPatternNotParenthesized)
+                    (\parameter ->
+                        -- https://github.com/roc-lang/roc/issues/7325
+                        case parameter of
+                            RocPatternAs parameterAs ->
+                                printParenthesized
+                                    (RocPatternAs parameterAs
+                                        |> printRocPatternNotParenthesized
+                                    )
+
+                            parameterNotAs ->
+                                parameterNotAs |> printRocPatternNotParenthesized
+                    )
                     (Print.exactly ", ")
             )
         |> Print.followedBy (Print.exactly " ->")
