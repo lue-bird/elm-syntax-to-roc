@@ -2506,6 +2506,9 @@ expressionOperatorToRocFunctionReference operatorSmbol =
         "::" ->
             Ok { moduleOrigin = Nothing, name = "listCons" }
 
+        "++" ->
+            Ok { moduleOrigin = Just "List", name = "concat" }
+
         unknownOrUnsupportedOperator ->
             Err ("unknown/unsupported operator " ++ unknownOrUnsupportedOperator)
 
