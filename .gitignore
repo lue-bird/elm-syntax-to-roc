@@ -11,9 +11,12 @@ main.js
 elmMain.js
 dist
 
-# experimental and not ready
 roc-example
-node-elm-to-roc
+example.roc
+testing.roc
+Elm.roc
+node-elm-to-roc/example/src/main
+node-elm-to-roc/example/src/testing
 
 # Editors
 .idea/
