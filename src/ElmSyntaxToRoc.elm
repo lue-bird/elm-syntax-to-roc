@@ -1711,9 +1711,14 @@ printParenthesized notParenthesizedPrint =
     in
     printExactlyParensOpening
         |> Print.followedBy
-            (Print.withIndentIncreasedBy 1
-                notParenthesizedPrint
-            )
+            -- this might look weird but the parser requires no extra indentation, so
+            -- (a = 3
+            -- b = 2
+            --
+            -- a + b
+            -- )
+            -- compiles but indenting b = 2 and the result by 1 fails.
+            notParenthesizedPrint
         |> Print.followedBy
             (Print.emptyOrLinebreakIndented lineSpread)
         |> Print.followedBy printExactlyParensClosing
