@@ -2,8 +2,8 @@ Print pure [`elm-syntax`](https://dark.elm.dmy.fr/packages/stil4m/elm-syntax/lat
 [roc](https://www.roc-lang.org/) code.
 
 ```elm
-import ElmSyntaxPrint
-import ElmSyntaxParserLenient
+import Elm.Parser
+import ElmSyntaxToRoc
 
 """module Sample exposing (..)
 
