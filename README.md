@@ -41,8 +41,8 @@ run [this node script](https://github.com/lue-bird/elm-syntax-to-roc/tree/main/n
     -   `elm/regex`, `elm/file`, `elm/bytes`, `elm/http`, `elm/random`, `elm/url`, `elm/json`, `elm/parser`, `elm/virtual-dom`,
         `elm/html`, `elm/svg`, `elm/browser`, `elm/time`, `elm-explorations/markdown`, `elm-explorations/webgl`, `elm-explorations/benchmark`, `elm-explorations/linear-algebra`
     -   `Platform`, `Platform.Cmd`, `Platform.Sub`, `Task`, `Process`
-    -   ports, glsl, the prefix operator functions `(>>)`, `(<<)`,
-        curried functions like `List.map (Basics.remainderBy 2)` or `Result.map2 Tuple.pair a b`
+    -   ports, glsl, the prefix operator functions `(>>)` and `(<<)`,
+        curried functions like `List.map (Basics.remainderBy 2)` or applicative pipelines
     -   `String` uses UTF-8 instead of UTF-16 internally which means some helpers relying on code point offsets (like `String.length`) can return different results
     - `Char.toUpper`, `Char.toLower`, `String.toUpper`, `String.toLower` only convert latin letters a-Z and keep any other letter unchanged
     -   `++` will default to `List.append` unless one of the arguments is a string literal. So e.g. use `a ++ b ++ ""` to append string variables (which is also faster in elm).
