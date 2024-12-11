@@ -52,6 +52,16 @@ basicsAlways =
 basicsRemainderBy =
     \\divisor, toDivide -> Num.rem toDivide divisor
 
+basicsModBy =
+    \\divisor, toDivide ->
+        remainder = Num.rem toDivide divisor
+
+        if ((remainder > 0 && divisor < 0) || (remainder < 0 && divisor > 0)) then
+            remainder + toDivide
+        
+        else
+            remainder
+
 stringJoin =
     \\separator, strings -> Str.joinWith strings separator
 

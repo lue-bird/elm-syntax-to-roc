@@ -1002,6 +1002,9 @@ referenceToRoc reference =
                 "remainderBy" ->
                     Just { moduleOrigin = Nothing, name = "basicsRemainderBy" }
 
+                "modBy" ->
+                    Just { moduleOrigin = Nothing, name = "basicsModBy" }
+
                 "sin" ->
                     Just { moduleOrigin = Just "Num", name = "sin" }
 
@@ -1121,10 +1124,10 @@ referenceToRoc reference =
                     Just { moduleOrigin = Just "Num", name = "intCast" }
 
                 "toLower" ->
-                    Just { moduleOrigin = Just "Num", name = "charToLower" }
+                    Just { moduleOrigin = Nothing, name = "charToLower" }
 
                 "toUpper" ->
-                    Just { moduleOrigin = Just "Num", name = "charToUpper" }
+                    Just { moduleOrigin = Nothing, name = "charToUpper" }
 
                 _ ->
                     Nothing
@@ -3308,6 +3311,16 @@ basicsAlways =
 
 basicsRemainderBy =
     \\divisor, toDivide -> Num.rem toDivide divisor
+
+basicsModBy =
+    \\divisor, toDivide ->
+        remainder = Num.rem toDivide divisor
+
+        if ((remainder > 0 && divisor < 0) || (remainder < 0 && divisor > 0)) then
+            remainder + toDivide
+        
+        else
+            remainder
 
 stringJoin =
     \\separator, strings -> Str.joinWith strings separator
