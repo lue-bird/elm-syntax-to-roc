@@ -304,7 +304,8 @@ expectTranspiledToRocStringAs expected source =
             let
                 transpiledResult :
                     { errors : List String
-                    , declarations : List { name : String, result : ElmSyntaxToRoc.RocExpression }
+                    , declarations :
+                        List { name : String, expression : ElmSyntaxToRoc.RocExpression }
                     }
                 transpiledResult =
                     [ parsed ] |> ElmSyntaxToRoc.modules

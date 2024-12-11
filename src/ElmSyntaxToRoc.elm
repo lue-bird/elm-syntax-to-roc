@@ -137,7 +137,7 @@ type RocLocalDeclaration
         }
     | RocLocalDeclarationValueOrFunction
         { name : String
-        , result : RocExpression
+        , expression : RocExpression
         }
 
 
@@ -1720,7 +1720,7 @@ modules :
         , declarations :
             List
                 { name : String
-                , result : RocExpression
+                , expression : RocExpression
                 }
         }
 modules syntaxDeclarationsIncludingCore =
@@ -2035,6 +2035,7 @@ modules syntaxDeclarationsIncludingCore =
                                                         , name = rocDeclaration.name
                                                         }
                                                             |> referenceToRocName
+                                                            |> rocNameSanitize
                                                 }
                                                     :: soFar.declarations
                                             }
@@ -2086,13 +2087,13 @@ valueOrFunctionDeclaration :
         Result
             String
             { name : String
-            , result : RocExpression
+            , expression : RocExpression
             }
 valueOrFunctionDeclaration moduleOriginLookup syntaxDeclarationValueOrFunction =
     Result.map2
         (\parameters result ->
             { name = syntaxDeclarationValueOrFunction.name |> Elm.Syntax.Node.value
-            , result =
+            , expression =
                 case parameters of
                     [] ->
                         result
@@ -2610,7 +2611,11 @@ letDeclaration moduleOriginLookup (Elm.Syntax.Node.Node _ syntaxLetDeclaration) 
         Elm.Syntax.Expression.LetFunction localValueOrFunction ->
             Result.map
                 (\valueOrFunction ->
-                    { main = RocLocalDeclarationValueOrFunction valueOrFunction
+                    { main =
+                        RocLocalDeclarationValueOrFunction
+                            { name = valueOrFunction.name |> rocNameSanitize
+                            , expression = valueOrFunction.expression
+                            }
                     , furtherVariableDestructurings = []
                     }
                 )
@@ -2858,7 +2863,7 @@ expressionOperatorToRocFunctionReference operatorSmbol =
 -}
 printRocDeclarationValueOrFunction :
     { name : String
-    , result : RocExpression
+    , expression : RocExpression
     }
     -> Print
 printRocDeclarationValueOrFunction implementation =
@@ -2867,7 +2872,7 @@ printRocDeclarationValueOrFunction implementation =
             (Print.withIndentAtNextMultipleOf4
                 (Print.linebreakIndented
                     |> Print.followedBy
-                        (implementation.result |> printRocExpressionNotParenthesized)
+                        (implementation.expression |> printRocExpressionNotParenthesized)
                 )
             )
 
@@ -3288,7 +3293,7 @@ Will also add some internal wrapper declarations.
 rocDeclarationsToModuleString :
     List
         { name : String
-        , result : RocExpression
+        , expression : RocExpression
         }
     -> String
 rocDeclarationsToModuleString declarations =
