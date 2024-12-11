@@ -3241,7 +3241,6 @@ printRocExpressionWithLocalDeclarations syntaxLetIn =
                 |> Print.followedBy Print.linebreakIndented
             )
         |> Print.followedBy printLinebreakLinebreakIndented
-        |> Print.followedBy printLinebreakLinebreakIndented
         |> Print.followedBy
             (printRocExpressionNotParenthesized syntaxLetIn.result)
 
