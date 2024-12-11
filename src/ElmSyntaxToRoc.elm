@@ -225,7 +225,7 @@ importsToModuleOriginLookup moduleExposes imports =
                                                                                 soFar
 
                                                                             Elm.Syntax.Exposing.FunctionExpose name ->
-                                                                                soFar |> FastSet.insert name
+                                                                                soFar |> FastSet.insert (name |> rocNameSanitize)
 
                                                                             Elm.Syntax.Exposing.TypeExpose choiceTypeExpose ->
                                                                                 case choiceTypeExpose.open of
@@ -252,6 +252,21 @@ importsToModuleOriginLookup moduleExposes imports =
     importsNormal
         |> List.foldl
             (\syntaxImport soFar ->
+                let
+                    importedModuleMembers : FastSet.Set String
+                    importedModuleMembers =
+                        case moduleExposes |> FastDict.get syntaxImport.moduleName of
+                            Nothing ->
+                                FastSet.empty
+
+                            Just moduleExposedNames ->
+                                moduleExposedNames.choiceTypesExposingVariants
+                                    |> FastDict.foldl
+                                        (\_ variantNames variantsSoFar ->
+                                            FastSet.union variantNames variantsSoFar
+                                        )
+                                        moduleExposedNames.valueOrFunctionNames
+                in
                 FastDict.union
                     (FastDict.union
                         (syntaxImport.exposes
@@ -265,7 +280,7 @@ importsToModuleOriginLookup moduleExposes imports =
                         )
                         (case syntaxImport.alias of
                             Nothing ->
-                                syntaxImport.exposes
+                                importedModuleMembers
                                     |> FastSet.foldl
                                         (\exposeFromImportedModule dictSoFar ->
                                             dictSoFar
@@ -276,7 +291,7 @@ importsToModuleOriginLookup moduleExposes imports =
                                         FastDict.empty
 
                             Just importAlias ->
-                                syntaxImport.exposes
+                                importedModuleMembers
                                     |> FastSet.foldl
                                         (\exposeFromImportedModule dictSoFar ->
                                             dictSoFar
@@ -1935,6 +1950,7 @@ modules syntaxDeclarationsIncludingCore =
                                                                     |> Elm.Syntax.Node.value
                                                                     |> .name
                                                                     |> Elm.Syntax.Node.value
+                                                                    |> rocNameSanitize
                                                                 )
                                                     , choiceTypesExposingVariants =
                                                         membersSoFar.choiceTypesExposingVariants
@@ -1952,7 +1968,10 @@ modules syntaxDeclarationsIncludingCore =
                                                                         (\(Elm.Syntax.Node.Node _ variant) variantNamesSoFar ->
                                                                             variantNamesSoFar
                                                                                 |> FastSet.insert
-                                                                                    (variant.name |> Elm.Syntax.Node.value)
+                                                                                    (variant.name
+                                                                                        |> Elm.Syntax.Node.value
+                                                                                        |> rocNameSanitize
+                                                                                    )
                                                                         )
                                                                         FastSet.empty
                                                                 )
