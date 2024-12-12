@@ -260,9 +260,7 @@ rocResultToMaybe =
                 Maybe_Just success
 
 aA0 =
-    when
-        []
-    is
+    when [] is
         [ b, MaybeJust c, .. as d ] ->
             b
 
@@ -270,9 +268,7 @@ aA0 =
             0
 
 aA1 =
-    when
-        []
-    is
+    when [] is
         [ b, MaybeJust c, .. ] ->
             b
 
@@ -281,9 +277,7 @@ aA1 =
 
 aA2 =
     \\x ->
-        when
-            x
-        is
+        when x is
             ( [ { y, z }, .. as tail ], (MaybeNothing) as nothing, ( MaybeJust [ "" ], 0 ) ) ->
                 0
 

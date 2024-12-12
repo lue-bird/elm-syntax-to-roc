@@ -1,9 +1,9 @@
 module Print exposing
     ( Print(..), toString
     , exactly, empty, linebreak, spaceOrLinebreakIndented
-    , followedBy, listMapAndIntersperseAndFlatten, listReverseAndMapAndIntersperseAndFlatten
+    , followedBy, listIntersperseAndFlatten, listMapAndIntersperseAndFlatten, listReverseAndMapAndIntersperseAndFlatten
     , withIndentAtNextMultipleOf4, withIndentIncreasedBy, linebreakIndented, emptyOrLinebreakIndented
-    , LineSpread(..), lineSpread, lineSpreadMergeWith
+    , LineSpread(..), lineSpread, lineSpreadMergeWith, lineSpreadListMapAndCombine
     )
 
 {-| simple pretty printing
@@ -18,13 +18,13 @@ module Print exposing
 
 ### combine
 
-@docs followedBy, listMapAndIntersperseAndFlatten, listReverseAndMapAndIntersperseAndFlatten
+@docs followedBy, listIntersperseAndFlatten, listMapAndIntersperseAndFlatten, listReverseAndMapAndIntersperseAndFlatten
 
 
 ### indent
 
 @docs withIndentAtNextMultipleOf4, withIndentIncreasedBy, linebreakIndented, emptyOrLinebreakIndented
-@docs LineSpread, lineSpread, lineSpreadMergeWith
+@docs LineSpread, lineSpread, lineSpreadMergeWith, lineSpreadListMapAndCombine
 
 -}
 

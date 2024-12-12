@@ -1460,27 +1460,17 @@ printPatternListExact elements =
             Print.exactly "[]"
 
         element0 :: element1Up ->
-            let
-                elementsPrint : Print
-                elementsPrint =
-                    (element0 :: element1Up)
+            printExactlySquareOpeningSpace
+                |> Print.followedBy
+                    ((element0 :: element1Up)
                         |> Print.listMapAndIntersperseAndFlatten
                             (\elementNode ->
                                 Print.withIndentIncreasedBy 2
                                     (printRocPatternNotParenthesized elementNode)
                             )
-                            (Print.linebreakIndented
-                                |> Print.followedBy
-                                    (Print.exactly ", ")
-                            )
-            in
-            printExactlySquareOpeningSpace
-                |> Print.followedBy elementsPrint
-                |> Print.followedBy
-                    (Print.spaceOrLinebreakIndented
-                        (elementsPrint |> Print.lineSpread)
+                            (Print.exactly ", ")
                     )
-                |> Print.followedBy printExactlySquareClosing
+                |> Print.followedBy (Print.exactly " ]")
 
 
 printRocPatternCons :
@@ -2220,10 +2210,12 @@ expression moduleOriginLookup (Elm.Syntax.Node.Node _ syntaxExpression) =
                     Result.map3
                         (\called argument0 argument1Up ->
                             RocExpressionCall
-                                { called = called
-                                , argument0 = argument0
-                                , argument1Up = argument1Up
-                                }
+                                (condenseExpressionCall
+                                    { called = called
+                                    , argument0 = argument0
+                                    , argument1Up = argument1Up
+                                    }
+                                )
                         )
                         (calledNode |> expression moduleOriginLookup)
                         (argument0Node |> expression moduleOriginLookup)
@@ -2238,10 +2230,12 @@ expression moduleOriginLookup (Elm.Syntax.Node.Node _ syntaxExpression) =
                     Result.map2
                         (\argument called ->
                             RocExpressionCall
-                                { called = called
-                                , argument0 = argument
-                                , argument1Up = []
-                                }
+                                (condenseExpressionCall
+                                    { called = called
+                                    , argument0 = argument
+                                    , argument1Up = []
+                                    }
+                                )
                         )
                         (leftNode |> expression moduleOriginLookup)
                         (rightNode |> expression moduleOriginLookup)
@@ -2250,10 +2244,12 @@ expression moduleOriginLookup (Elm.Syntax.Node.Node _ syntaxExpression) =
                     Result.map2
                         (\called argument ->
                             RocExpressionCall
-                                { called = called
-                                , argument0 = argument
-                                , argument1Up = []
-                                }
+                                (condenseExpressionCall
+                                    { called = called
+                                    , argument0 = argument
+                                    , argument1Up = []
+                                    }
+                                )
                         )
                         (leftNode |> expression moduleOriginLookup)
                         (rightNode |> expression moduleOriginLookup)
@@ -2544,6 +2540,23 @@ expression moduleOriginLookup (Elm.Syntax.Node.Node _ syntaxExpression) =
                                 )
                         )
                         (letIn.expression |> expression moduleOriginLookup)
+
+
+condenseExpressionCall call =
+    case call.called of
+        RocExpressionCall calledCall ->
+            { called = calledCall.called
+            , argument0 = calledCall.argument0
+            , argument1Up =
+                calledCall.argument1Up
+                    ++ (call.argument0 :: call.argument1Up)
+            }
+
+        calledNotCall ->
+            { called = calledNotCall
+            , argument0 = call.argument0
+            , argument1Up = call.argument1Up
+            }
 
 
 rocExpressionIsDefinitelyOfTypeString : RocExpression -> Bool
@@ -3015,21 +3028,7 @@ printRocExpressionNotParenthesized rocExpression =
             Print.exactly "{}"
 
         RocExpressionCall call ->
-            printRocExpressionNotParenthesized call.called
-                |> Print.followedBy
-                    (Print.withIndentAtNextMultipleOf4
-                        (Print.linebreakIndented
-                            |> Print.followedBy
-                                ((call.argument0 :: call.argument1Up)
-                                    |> Print.listMapAndIntersperseAndFlatten
-                                        (\argument ->
-                                            printRocExpressionParenthesizedIfSpaceSeparated
-                                                argument
-                                        )
-                                        Print.linebreakIndented
-                                )
-                        )
-                    )
+            printRocExpressionCall call
 
         RocExpressionReference reference ->
             Print.exactly
@@ -3051,31 +3050,69 @@ printRocExpressionNotParenthesized rocExpression =
             Print.exactly ("." ++ (fieldName |> String.replace "." ""))
 
         RocExpressionTuple parts ->
+            let
+                part0Print : Print
+                part0Print =
+                    parts.part0 |> printRocExpressionNotParenthesized
+
+                part1Print : Print
+                part1Print =
+                    parts.part1 |> printRocExpressionNotParenthesized
+
+                lineSpread : Print.LineSpread
+                lineSpread =
+                    part0Print
+                        |> Print.lineSpread
+                        |> Print.lineSpreadMergeWith
+                            (\() -> part1Print |> Print.lineSpread)
+            in
             Print.exactly "( "
                 |> Print.followedBy
-                    ([ parts.part0, parts.part1 ]
-                        |> Print.listMapAndIntersperseAndFlatten
-                            printRocExpressionNotParenthesized
-                            (Print.linebreakIndented
+                    ([ part0Print, part1Print ]
+                        |> Print.listIntersperseAndFlatten
+                            (Print.spaceOrLinebreakIndented lineSpread
                                 |> Print.followedBy
                                     (Print.exactly ", ")
                             )
                     )
-                |> Print.followedBy Print.linebreakIndented
+                |> Print.followedBy
+                    (Print.spaceOrLinebreakIndented lineSpread)
                 |> Print.followedBy (Print.exactly ")")
 
         RocExpressionTriple parts ->
+            let
+                part0Print : Print
+                part0Print =
+                    parts.part0 |> printRocExpressionNotParenthesized
+
+                part1Print : Print
+                part1Print =
+                    parts.part1 |> printRocExpressionNotParenthesized
+
+                part2Print : Print
+                part2Print =
+                    parts.part2 |> printRocExpressionNotParenthesized
+
+                lineSpread : Print.LineSpread
+                lineSpread =
+                    part0Print
+                        |> Print.lineSpread
+                        |> Print.lineSpreadMergeWith
+                            (\() -> part1Print |> Print.lineSpread)
+                        |> Print.lineSpreadMergeWith
+                            (\() -> part2Print |> Print.lineSpread)
+            in
             Print.exactly "( "
                 |> Print.followedBy
-                    ([ parts.part0, parts.part1, parts.part2 ]
-                        |> Print.listMapAndIntersperseAndFlatten
-                            printRocExpressionNotParenthesized
-                            (Print.linebreakIndented
+                    ([ part0Print, part1Print, part2Print ]
+                        |> Print.listIntersperseAndFlatten
+                            (Print.spaceOrLinebreakIndented lineSpread
                                 |> Print.followedBy
                                     (Print.exactly ", ")
                             )
                     )
-                |> Print.followedBy Print.linebreakIndented
+                |> Print.followedBy
+                    (Print.spaceOrLinebreakIndented lineSpread)
                 |> Print.followedBy (Print.exactly ")")
 
         RocExpressionWithLocalDeclarations expressionWithLocalDeclarations ->
@@ -3103,6 +3140,37 @@ printRocExpressionNotParenthesized rocExpression =
 
         RocExpressionRecordUpdate syntaxRecordUpdate ->
             printRocExpressionRecordUpdate syntaxRecordUpdate
+
+
+printRocExpressionCall :
+    { called : RocExpression
+    , argument0 : RocExpression
+    , argument1Up : List RocExpression
+    }
+    -> Print
+printRocExpressionCall call =
+    let
+        argumentPrints : List Print
+        argumentPrints =
+            (call.argument0 :: call.argument1Up)
+                |> List.map printRocExpressionParenthesizedIfSpaceSeparated
+
+        fullLineSpread : Print.LineSpread
+        fullLineSpread =
+            argumentPrints
+                |> Print.lineSpreadListMapAndCombine Print.lineSpread
+    in
+    printRocExpressionNotParenthesized call.called
+        |> Print.followedBy
+            (Print.withIndentAtNextMultipleOf4
+                (Print.spaceOrLinebreakIndented fullLineSpread
+                    |> Print.followedBy
+                        (argumentPrints
+                            |> Print.listIntersperseAndFlatten
+                                (Print.spaceOrLinebreakIndented fullLineSpread)
+                        )
+                )
+            )
 
 
 floatLiteral : Float -> String
@@ -3227,15 +3295,24 @@ printRocExpressionIfThenElse :
     }
     -> Print
 printRocExpressionIfThenElse syntaxIfThenElse =
+    let
+        conditionPrint : Print
+        conditionPrint =
+            printRocExpressionNotParenthesized syntaxIfThenElse.condition
+
+        conditionLineSpread : Print.LineSpread
+        conditionLineSpread =
+            conditionPrint |> Print.lineSpread
+    in
     printExactlyIf
         |> Print.followedBy
             (Print.withIndentAtNextMultipleOf4
-                (Print.linebreakIndented
-                    |> Print.followedBy
-                        (printRocExpressionNotParenthesized syntaxIfThenElse.condition)
+                (Print.spaceOrLinebreakIndented conditionLineSpread
+                    |> Print.followedBy conditionPrint
                 )
             )
-        |> Print.followedBy Print.linebreakIndented
+        |> Print.followedBy
+            (Print.spaceOrLinebreakIndented conditionLineSpread)
         |> Print.followedBy (Print.exactly "then")
         |> Print.followedBy
             (Print.withIndentAtNextMultipleOf4
@@ -3263,17 +3340,24 @@ printRocExpressionWhenIs :
     }
     -> Print
 printRocExpressionWhenIs whenIs =
+    let
+        matchedPrint : Print
+        matchedPrint =
+            printRocExpressionNotParenthesized whenIs.matched
+
+        matchedPrintLineSpread : Print.LineSpread
+        matchedPrintLineSpread =
+            matchedPrint |> Print.lineSpread
+    in
     printExactlyWhen
         |> Print.followedBy
             (Print.withIndentAtNextMultipleOf4
-                (Print.linebreakIndented
-                    |> Print.followedBy
-                        (printRocExpressionNotParenthesized
-                            whenIs.matched
-                        )
+                (Print.spaceOrLinebreakIndented matchedPrintLineSpread
+                    |> Print.followedBy matchedPrint
                 )
             )
-        |> Print.followedBy Print.linebreakIndented
+        |> Print.followedBy
+            (Print.spaceOrLinebreakIndented matchedPrintLineSpread)
         |> Print.followedBy (Print.exactly "is")
         |> Print.followedBy
             (Print.withIndentAtNextMultipleOf4
