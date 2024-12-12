@@ -169,7 +169,11 @@ runningInterface state =
             { path = "src/Elm.roc"
             , content =
                 state.parsedModules
-                    |> elmSyntaxModulesToBundledRocBytes
+                    |> ElmSyntaxToRoc.modules
+                    |> .declarations
+                    |> ElmSyntaxToRoc.rocDeclarationsToModuleString
+                    |> Bytes.Encode.string
+                    |> Bytes.Encode.encode
             }
             |> Node.interfaceFutureMap
                 Finished
@@ -200,13 +204,25 @@ runningInterface state =
                                                 |> FastSet.remove sourceDirectoryPath
                                         , sourceFilesToRead =
                                             subPaths
+                                                |> List.filter
+                                                    (\subPath ->
+                                                        (subPath |> String.endsWith ".elm")
+                                                            && -- TODO remove this filter for general use
+                                                               Basics.not
+                                                                ((sourceDirectoryPath |> String.contains "stil4m/elm-syntax")
+                                                                    && ((subPath |> String.contains "Elm/Writer")
+                                                                            || (subPath |> String.contains "Elm/Processing")
+                                                                            || (subPath |> String.contains "Elm/RawFile")
+                                                                            || (subPath |> String.contains "Elm/Parser")
+                                                                            || (subPath |> String.contains "ParserFast")
+                                                                       )
+                                                                )
+                                                    )
                                                 |> List.foldl
                                                     (\subPath soFar ->
-                                                        if subPath |> String.endsWith ".elm" then
-                                                            soFar |> FastSet.insert (sourceDirectoryPath ++ "/" ++ subPath)
-
-                                                        else
-                                                            soFar
+                                                        soFar
+                                                            |> FastSet.insert
+                                                                (sourceDirectoryPath ++ "/" ++ subPath)
                                                     )
                                                     state.sourceFilesToRead
                                         , parsedModules = state.parsedModules
@@ -299,35 +315,6 @@ bytesToElmSyntaxModule sourceBytes =
 
                 Ok syntax ->
                     Ok syntax
-
-
-elmSyntaxModulesToBundledRocBytes : List Elm.Syntax.File.File -> Bytes
-elmSyntaxModulesToBundledRocBytes elmSyntaxModules =
-    elmSyntaxModules
-        |> List.filter
-            (\syntaxModule ->
-                case
-                    syntaxModule.moduleDefinition
-                        |> Elm.Syntax.Node.value
-                        |> moduleHeaderName
-                of
-                    [ "Elm", "Writer" ] ->
-                        False
-
-                    [ "Elm", "Processing" ] ->
-                        False
-
-                    [ "Elm", "RawFile" ] ->
-                        False
-
-                    _ ->
-                        True
-            )
-        |> ElmSyntaxToRoc.modules
-        |> .declarations
-        |> ElmSyntaxToRoc.rocDeclarationsToModuleString
-        |> Bytes.Encode.string
-        |> Bytes.Encode.encode
 
 
 moduleHeaderName : Elm.Syntax.Module.Module -> Elm.Syntax.ModuleName.ModuleName
