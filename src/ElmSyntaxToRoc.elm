@@ -143,10 +143,7 @@ type RocLocalDeclaration
 
 {-| How do references used in a module map to their origin module?
 
-Contains variants, type alias names, choice type names, port names, expression declaration names
-and whether `(|.)` and or `(|=)` are imported from `Parser.Advanced`.
-
-Also contains locally declared names when available.
+Contains variants, variant function and value declaration names.
 
 -}
 type alias ModuleOriginLookup =
@@ -1761,6 +1758,10 @@ modules syntaxDeclarationsIncludingCore =
                             [ "Array" ] ->
                                 False
 
+                            -- https://github.com/elm/core/blob/1.0.5/src/Elm/JsArray.elm
+                            [ "Elm", "JsArray" ] ->
+                                False
+
                             [ "Bitwise" ] ->
                                 False
 
@@ -1837,6 +1838,29 @@ modules syntaxDeclarationsIncludingCore =
                                 False
 
                             [ "Browser", "Dom" ] ->
+                                False
+
+                            -- https://github.com/elm/browser/blob/master/src/Browser/AnimationManager.elm
+                            [ "Browser", "AnimationManager" ] ->
+                                False
+
+                            -- https://github.com/elm/browser/tree/master/src/Debugger
+                            [ "Debugger", "Expando" ] ->
+                                False
+
+                            [ "Debugger", "History" ] ->
+                                False
+
+                            [ "Debugger", "Main" ] ->
+                                False
+
+                            [ "Debugger", "Metadata" ] ->
+                                False
+
+                            [ "Debugger", "Overlay" ] ->
+                                False
+
+                            [ "Debugger", "Report" ] ->
                                 False
 
                             [ "Html" ] ->
@@ -2829,8 +2853,8 @@ destructuringPatternExtractAs rocPattern =
 expressionOperatorToRocFunctionReference :
     String
     -> Result String { moduleOrigin : Maybe String, name : String }
-expressionOperatorToRocFunctionReference operatorSmbol =
-    case operatorSmbol of
+expressionOperatorToRocFunctionReference operatorSymbol =
+    case operatorSymbol of
         "+" ->
             Ok { moduleOrigin = Just "Num", name = "add" }
 
@@ -3613,11 +3637,6 @@ printLinebreakLinebreakIndented : Print.Print
 printLinebreakLinebreakIndented =
     Print.linebreak
         |> Print.followedBy Print.linebreakIndented
-
-
-printExactlyCommaSpace : Print.Print
-printExactlyCommaSpace =
-    Print.exactly ", "
 
 
 printExactlySquareOpeningSpace : Print.Print
