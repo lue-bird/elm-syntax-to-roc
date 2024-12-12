@@ -3121,9 +3121,10 @@ printRocExpressionList listElements =
             Print.exactly "[]"
 
         element0 :: element1Up ->
-            printExactlySquareOpeningSpace
-                |> Print.followedBy
-                    ((element0 :: element1Up)
+            let
+                elementsPrint : Print
+                elementsPrint =
+                    (element0 :: element1Up)
                         |> Print.listMapAndIntersperseAndFlatten
                             (\element ->
                                 Print.withIndentIncreasedBy 2
@@ -3132,6 +3133,13 @@ printRocExpressionList listElements =
                             (Print.linebreakIndented
                                 |> Print.followedBy (Print.exactly ", ")
                             )
+            in
+            printExactlySquareOpeningSpace
+                |> Print.followedBy
+                    elementsPrint
+                |> Print.followedBy
+                    (Print.spaceOrLinebreakIndented
+                        (elementsPrint |> Print.lineSpread)
                     )
                 |> Print.followedBy printExactlySquareClosing
 
