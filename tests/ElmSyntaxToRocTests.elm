@@ -296,11 +296,42 @@ aA2 =
 
 expectTranspiledToRocStringAs : String -> String -> Expect.Expectation
 expectTranspiledToRocStringAs expected source =
-    case source |> Elm.Parser.parseToFile of
-        Err deadEnds ->
-            Expect.fail ("failed to parse actual source: " ++ (deadEnds |> Debug.toString))
+    case
+        [ source, elmCoreMaybeSourcePartial ]
+            |> List.foldl
+                (\moduleSource soFarOrError ->
+                    case moduleSource |> Elm.Parser.parseToFile of
+                        Err deadEnds ->
+                            Err
+                                (("failed to parse actual source: "
+                                    ++ (deadEnds |> Debug.toString)
+                                 )
+                                    :: (case soFarOrError of
+                                            Err errors ->
+                                                errors
 
-        Ok parsed ->
+                                            Ok _ ->
+                                                []
+                                       )
+                                )
+
+                        Ok parsed ->
+                            case soFarOrError of
+                                Err error ->
+                                    Err error
+
+                                Ok soFar ->
+                                    Ok (parsed :: soFar)
+                )
+                (Ok [])
+    of
+        Err deadEnds ->
+            Expect.fail
+                ("failed to parse actual source: "
+                    ++ (deadEnds |> Debug.toString)
+                )
+
+        Ok parsedModules ->
             let
                 transpiledResult :
                     { errors : List String
@@ -308,7 +339,7 @@ expectTranspiledToRocStringAs expected source =
                         List { name : String, expression : ElmSyntaxToRoc.RocExpression }
                     }
                 transpiledResult =
-                    [ parsed ] |> ElmSyntaxToRoc.modules
+                    parsedModules |> ElmSyntaxToRoc.modules
             in
             case transpiledResult.errors of
                 transpilationError0 :: transpilationError1Up ->
@@ -352,3 +383,22 @@ expectTranspiledToRocStringAs expected source =
                                         |> String.join "\n"
                                    )
                             )
+
+
+elmCoreMaybeSourcePartial : String
+elmCoreMaybeSourcePartial =
+    """module Maybe exposing
+  ( Maybe(..)
+  , andThen
+  , map, map2, map3, map4, map5
+  , withDefault
+  )
+
+
+import Basics exposing (Bool(..))
+
+
+type Maybe a
+    = Just a
+    | Nothing
+"""
