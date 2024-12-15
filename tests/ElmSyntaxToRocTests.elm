@@ -18,7 +18,7 @@ a0 =
             b
 
         _ ->
-            0
+            Maybe.Nothing
 
 a1 =
     case [] of
@@ -26,11 +26,11 @@ a1 =
             b
 
         _ ->
-            0
+            Nothing
 
 a2 x =
     case x of
-        (({y,z}::tail), Maybe.Nothing as nothing, (Just[""],0)) ->
+        (({y,z}::tail), Maybe.Nothing as nothing, (Just[ "" ],0)) ->
             0
         _ ->
             1
@@ -261,24 +261,24 @@ rocResultToMaybe =
 
 aA0 =
     when [] is
-        [ b, MaybeJust c, .. as d ] ->
+        [b, MaybeJust c, .. as d] ->
             b
 
         _ ->
-            0
+            MaybeNothing
 
 aA1 =
     when [] is
-        [ b, MaybeJust c, .. ] ->
+        [b, MaybeJust c, ..] ->
             b
 
         _ ->
-            0
+            MaybeNothing
 
 aA2 =
     \\x ->
         when x is
-            ( [ { y, z }, .. as tail ], (MaybeNothing) as nothing, ( MaybeJust [ "" ], 0 ) ) ->
+            ( [{ y, z }, .. as tail], (MaybeNothing) as nothing, ( MaybeJust [""], 0 ) ) ->
                 0
 
             _ ->

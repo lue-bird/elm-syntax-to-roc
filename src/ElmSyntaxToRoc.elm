@@ -1407,10 +1407,10 @@ printRocPatternNotParenthesized rocPattern =
             printRocPatternRecord fields
 
         RocPatternListCons rocPatternListCons ->
-            printRocPatternCons rocPatternListCons
+            printRocPatternListCons rocPatternListCons
 
         RocPatternListExact elements ->
-            printPatternListExact elements
+            printRocPatternListExact elements
 
         RocPatternTagged tagged ->
             Print.exactly tagged.name
@@ -1453,14 +1453,14 @@ printRocPatternNotParenthesized rocPattern =
                 |> Print.followedBy (Print.exactly " )")
 
 
-printPatternListExact : List RocPattern -> Print
-printPatternListExact elements =
+printRocPatternListExact : List RocPattern -> Print
+printRocPatternListExact elements =
     case elements of
         [] ->
             Print.exactly "[]"
 
         element0 :: element1Up ->
-            printExactlySquareOpeningSpace
+            printExactlySquareOpening
                 |> Print.followedBy
                     ((element0 :: element1Up)
                         |> Print.listMapAndIntersperseAndFlatten
@@ -1470,17 +1470,17 @@ printPatternListExact elements =
                             )
                             (Print.exactly ", ")
                     )
-                |> Print.followedBy (Print.exactly " ]")
+                |> Print.followedBy printExactlySquareClosing
 
 
-printRocPatternCons :
+printRocPatternListCons :
     { initialElement0 : RocPattern
     , initialElement1Up : List RocPattern
     , tailVariable : Maybe String
     }
     -> Print
-printRocPatternCons syntaxCons =
-    printExactlySquareOpeningSpace
+printRocPatternListCons syntaxCons =
+    printExactlySquareOpening
         |> Print.FollowedBy
             (syntaxCons.initialElement0
                 :: syntaxCons.initialElement1Up
@@ -1501,7 +1501,7 @@ printRocPatternCons syntaxCons =
                     Print.exactly (" as " ++ tailVariable)
             )
         |> Print.followedBy
-            (Print.exactly " ]")
+            printExactlySquareClosing
 
 
 patternConsExpand :
@@ -2542,6 +2542,16 @@ expression moduleOriginLookup (Elm.Syntax.Node.Node _ syntaxExpression) =
                         (letIn.expression |> expression moduleOriginLookup)
 
 
+condenseExpressionCall :
+    { called : RocExpression
+    , argument0 : RocExpression
+    , argument1Up : List RocExpression
+    }
+    ->
+        { called : RocExpression
+        , argument0 : RocExpression
+        , argument1Up : List RocExpression
+        }
 condenseExpressionCall call =
     case call.called of
         RocExpressionCall calledCall ->
@@ -3202,11 +3212,10 @@ printRocExpressionList listElements =
                                 |> Print.followedBy (Print.exactly ", ")
                             )
             in
-            printExactlySquareOpeningSpace
+            printExactlySquareOpening
+                |> Print.followedBy elementsPrint
                 |> Print.followedBy
-                    elementsPrint
-                |> Print.followedBy
-                    (Print.spaceOrLinebreakIndented
+                    (Print.emptyOrLinebreakIndented
                         (elementsPrint |> Print.lineSpread)
                     )
                 |> Print.followedBy printExactlySquareClosing
@@ -3731,9 +3740,9 @@ printLinebreakLinebreakIndented =
         |> Print.followedBy Print.linebreakIndented
 
 
-printExactlySquareOpeningSpace : Print.Print
-printExactlySquareOpeningSpace =
-    Print.exactly "[ "
+printExactlySquareOpening : Print.Print
+printExactlySquareOpening =
+    Print.exactly "["
 
 
 printExactlyCurlyOpeningSpace : Print.Print
