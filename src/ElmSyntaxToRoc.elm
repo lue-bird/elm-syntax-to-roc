@@ -1761,6 +1761,9 @@ modules syntaxDeclarationsIncludingCore =
                             [ "Char" ] ->
                                 False
 
+                            [ "String" ] ->
+                                False
+
                             [ "List" ] ->
                                 False
 
