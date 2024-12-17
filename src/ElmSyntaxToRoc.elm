@@ -2303,17 +2303,31 @@ expression moduleOriginLookup (Elm.Syntax.Node.Node _ syntaxExpression) =
                         (rightNode |> expression moduleOriginLookup)
 
         Elm.Syntax.Expression.FunctionOrValue qualification name ->
-            Ok
-                (RocExpressionReference
-                    (case moduleOriginLookup |> FastDict.get ( qualification, name ) of
-                        Nothing ->
-                            -- locally declared or variable
-                            { moduleOrigin = Nothing
-                            , name = name |> rocNameSanitize
-                            }
+            case moduleOriginLookup |> FastDict.get ( qualification, name ) of
+                Nothing ->
+                    case qualification of
+                        qualificationPart0 :: qualificationPart1Up ->
+                            Err
+                                ("Could not find module origin of the qualified reference "
+                                    ++ (((qualificationPart0 :: qualificationPart1Up) |> String.join ".")
+                                            ++ "."
+                                            ++ name
+                                       )
+                                )
 
-                        Just moduleOrigin ->
-                            case { moduleOrigin = moduleOrigin, name = name } |> referenceToRoc of
+                        [] ->
+                            -- locally declared or variable
+                            Ok
+                                (RocExpressionReference
+                                    { moduleOrigin = Nothing
+                                    , name = name |> rocNameSanitize
+                                    }
+                                )
+
+                Just moduleOrigin ->
+                    Ok
+                        (RocExpressionReference
+                            (case { moduleOrigin = moduleOrigin, name = name } |> referenceToRoc of
                                 Just rocReference ->
                                     rocReference
 
@@ -2325,8 +2339,8 @@ expression moduleOriginLookup (Elm.Syntax.Node.Node _ syntaxExpression) =
                                             , name = name
                                             }
                                     }
-                    )
-                )
+                            )
+                        )
 
         Elm.Syntax.Expression.IfBlock conditionNode onTrueNode onFalseNode ->
             Result.map3
