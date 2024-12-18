@@ -111,11 +111,11 @@ interface state =
         Finished result ->
             case result of
                 Err error ->
-                    errorInterface "Failed to write the bundled code into src/elm.roc."
+                    errorInterface "Failed to write the bundled code into src/Elm.roc."
 
                 Ok () ->
                     Node.standardOutWrite
-                        "Successfully wrote the bundled code into src/elm.roc.\n"
+                        "Successfully wrote the bundled code into src/Elm.roc.\n"
 
         ElmJsonReadFailed elmJsonDecodeError ->
             errorInterface elmJsonDecodeError
