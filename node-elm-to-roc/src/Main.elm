@@ -102,7 +102,7 @@ interface state =
 
                                     Elm.Project.Package _ ->
                                         ElmJsonReadFailed
-                                            "You're in a package but roc-to-elm only works for applications."
+                                            "You're in a package but elm-to-roc only works for applications."
                     )
 
         Running runningState ->
