@@ -21,10 +21,10 @@ plus2 n =
         )
 -->
 Ok """module [
-    sample_plus2
+    samplePlus2
 ]
 
-sample_plus2 =
+samplePlus2 =
     \n ->
         Num.add n (List.sum [ 2 ])
 
