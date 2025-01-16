@@ -56,7 +56,7 @@ run [this node script](https://github.com/lue-bird/elm-syntax-to-roc/tree/main/n
 -   not much care has been put into making the resulting code readable or even conventionally formatted
     and comments are not preserved
 
-Please [report any issues](https://github.com/lue-bird/elm-syntax-format/issues/new) you notice <3
+Please [report any issues](https://github.com/lue-bird/elm-syntax-to-roc/issues/new) you notice <3
 
 ### why roc?
 
